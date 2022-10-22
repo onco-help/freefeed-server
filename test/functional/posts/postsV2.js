@@ -65,6 +65,7 @@ describe('TimelinesControllerV2', () => {
           const post = await fetchPost(lunaPost.id, null, { allComments });
           expect(post.posts.comments, 'to have length', expComments);
           expect(post.posts.omittedComments, 'to equal', expOmitted);
+          expect(post.posts.omittedCommentsOffset, 'to equal', expOmitted > 0 ? 1 : 0);
         };
 
         describe('Folded comments', () => {

@@ -274,6 +274,7 @@ const timelinesPostsTrait = (superClass) =>
      *   attachments: <array of Attachment objects>
      *   comments: <array of Comments objects>
      *   omittedComments: <number>
+     *   omittedCommentsOffset: <number>
      *   likes: <array of liker's UIDs>
      *   omittedLikes: <number>
      * }
@@ -454,6 +455,7 @@ const timelinesPostsTrait = (superClass) =>
           attachments: [],
           comments: [],
           omittedComments: 0,
+          omittedCommentsOffset: 0,
           likes: [],
           omittedLikes: 0,
           backlinksCount: backlinks.get(post.uid) || 0,
@@ -502,6 +504,8 @@ const timelinesPostsTrait = (superClass) =>
         results[comm.post_id].comments.push(comment);
         results[comm.post_id].omittedComments =
           params.foldComments && comm.count > params.maxUnfoldedComments ? comm.count - 2 : 0;
+        results[comm.post_id].omittedCommentsOffset =
+          results[comm.post_id].omittedComments > 0 ? 1 : 0;
 
         if (params.foldComments && results[comm.post_id].omittedComments > 0) {
           let omittedCLikes = results[comm.post_id].post.hasOwnProperty('omittedCommentLikes')

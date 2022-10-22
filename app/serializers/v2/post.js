@@ -114,6 +114,7 @@ export async function serializeFeed(
     comments,
     likes,
     omittedComments,
+    omittedCommentsOffset,
     omittedLikes,
     backlinksCount,
   } of postsWithStuff.filter(Boolean)) {
@@ -124,6 +125,7 @@ export async function serializeFeed(
       attachments: attachments.map((a) => a.id),
       likes,
       omittedComments,
+      omittedCommentsOffset,
       omittedLikes,
       backlinksCount,
       notifyOfAllComments: false,
