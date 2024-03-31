@@ -335,15 +335,24 @@ export default class PubsubListener {
     }
 
     // See doc/visibility-rules.md for details
-    const bansMap = await dbAdapter.getUsersBansIdsMap(userIds);
+    const [bansMap, bannedByMap] = await Promise.all([
+      dbAdapter.getUsersBansIdsMap(userIds),
+      dbAdapter.getUsersBanedByIdsMap(userIds),
+    ]);
 
+    /** @type {UUID[]} */
     let usersDisabledBans = [];
+    /** @type {UUID[]} */
+    let adminsDisabledBans = [];
 
     if (post) {
       const postGroups = await dbAdapter.getPostGroups(post.id);
-      usersDisabledBans = await dbAdapter
-        .getUsersWithDisabledBansInGroups(postGroups.map((g) => g.id))
-        .then((us) => us.map((u) => u.user_id));
+
+      // Users/admins who have disabled bans in some post groups
+      const groupIds = postGroups.map((g) => g.id);
+      const disabledBans = await dbAdapter.getUsersWithDisabledBansInGroups(groupIds);
+      usersDisabledBans = disabledBans.map((u) => u.user_id);
+      adminsDisabledBans = disabledBans.filter((u) => u.is_admin).map((u) => u.user_id);
     }
 
     await Promise.all(
@@ -355,20 +364,28 @@ export default class PubsubListener {
 
         // Bans
         if (post && userId) {
-          const banIds = (!usersDisabledBans.includes(userId) && bansMap.get(userId)) || [];
+          const bannedUserIds = (!usersDisabledBans.includes(userId) && bansMap.get(userId)) || [];
+          const bannedByUserIds =
+            (!adminsDisabledBans.includes(userId) && bannedByMap.get(userId)) || [];
+
+          const isBanned = (id) => bannedUserIds.includes(id) || bannedByUserIds.includes(id);
 
           if (
-            (type === eventNames.COMMENT_UPDATED && banIds.includes(data.comments.createdBy)) ||
-            (type === eventNames.LIKE_ADDED && banIds.includes(data.users.id)) ||
+            (type === eventNames.COMMENT_UPDATED && isBanned(data.comments.createdBy)) ||
+            (type === eventNames.LIKE_ADDED && isBanned(data.users.id)) ||
             ((type === eventNames.COMMENT_LIKE_ADDED || type === eventNames.COMMENT_LIKE_REMOVED) &&
-              (banIds.includes(data.comments.createdBy) || banIds.includes(data.comments.userId)))
+              (isBanned(data.comments.createdBy) || isBanned(data.comments.userId)))
           ) {
             return;
           }
 
           // A very special case: comment author is banned, but the viewer chooses
           // to see such comments as placeholders.
-          if (type === eventNames.COMMENT_CREATED && banIds.includes(data.comments.createdBy)) {
+          // TODO: add the 'bannedByUserIds' check and Comment.HIDDEN_BANNED_BY status
+          if (
+            type === eventNames.COMMENT_CREATED &&
+            bannedUserIds.includes(data.comments.createdBy)
+          ) {
             const user = await dbAdapter.getUserById(userId);
 
             if (user.getHiddenCommentTypes().includes(Comment.HIDDEN_BANNED)) {
