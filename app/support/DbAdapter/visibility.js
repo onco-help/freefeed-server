@@ -260,19 +260,35 @@ const visibilityTrait = (superClass) =>
       );
 
       const [
+        // Users banned by comment author
+        bannedByAuthor,
         // Users who banned comment author
         authorBannedBy,
         usersDisabledBans,
       ] = await Promise.all([
+        this.getUserBansIds(commentAuthor),
         this.getUserIdsWhoBannedUser(commentAuthor),
         this.getUsersWithDisabledBansInGroups(postGroups),
       ]);
 
+      // Users who choose to see banned posts in any of post group
       const allWhoDisabledBans = usersDisabledBans.map((r) => r.user_id);
+      // Users who are admins of any post group and choose to see banned posts in it
+      const adminsWhoDisabledBans = usersDisabledBans
+        .filter((r) => r.is_admin)
+        .map((r) => r.user_id);
 
       return List.intersection(
         postViewers,
-        List.inverse(List.difference(authorBannedBy, allWhoDisabledBans)),
+        // List.inverse(List.difference(authorBannedBy, allWhoDisabledBans)),
+        List.inverse(
+          List.union(
+            // All who banned comment author, except those who disabled bans
+            List.difference(authorBannedBy, allWhoDisabledBans),
+            // All banned by comment author, except ADMINS who disabled bans
+            List.difference(bannedByAuthor, adminsWhoDisabledBans),
+          ),
+        ),
       );
     }
 
