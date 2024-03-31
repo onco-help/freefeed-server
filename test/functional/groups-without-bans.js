@@ -415,22 +415,15 @@ describe('Groups without bans', () => {
           ]);
         });
 
-        it(`should also see Venus comment in post to Celestials because of bans asymmetry`, async () => {
+        it(`should not see Venus comment in post to Celestials because of bans symmetry`, async () => {
           const resp = await shouldSeePost(postFromMarsToCelestials, luna);
-          expect(resp.comments, 'to satisfy', [
-            { createdBy: venus.user.id },
-            { createdBy: mars.user.id },
-          ]);
+          expect(resp.comments, 'to satisfy', [{ createdBy: mars.user.id }]);
         });
 
-        it(`should find all posts with 'in-comment:venus' because of bans asymmetry`, () =>
+        it(`should not find solo Celestials posts with 'in-comment:venus' because of bans symmetry`, () =>
           shouldFindPosts(
             'in-comment:venus',
-            [
-              postFromMarsToSelenites,
-              postFromMarsToSelenitesAndCelestials,
-              postFromMarsToCelestials,
-            ],
+            [postFromMarsToSelenites, postFromMarsToSelenitesAndCelestials],
             luna,
           ));
       });

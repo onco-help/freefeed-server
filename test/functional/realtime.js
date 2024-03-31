@@ -440,7 +440,7 @@ describe('Realtime (Socket.io)', () => {
               expect(
                 msg,
                 'to satisfy',
-                commentHavingNLikesExpectation(1, false, lunaContext.user.id),
+                commentHavingNLikesExpectation(0, false, lunaContext.user.id),
               );
             });
           });
@@ -709,7 +709,7 @@ describe('Realtime (Socket.io)', () => {
               expect(
                 msg,
                 'to satisfy',
-                commentHavingNLikesExpectation(1, false, lunaContext.user.id),
+                commentHavingNLikesExpectation(0, false, lunaContext.user.id),
               );
             });
           });
@@ -1151,7 +1151,7 @@ describe('Realtime (Socket.io)', () => {
               expect(
                 msg,
                 'to satisfy',
-                commentHavingNLikesExpectation(1, false, lunaContext.user.id),
+                commentHavingNLikesExpectation(0, false, lunaContext.user.id),
               );
             });
           });

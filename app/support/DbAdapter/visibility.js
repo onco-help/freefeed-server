@@ -83,28 +83,59 @@ const visibilityTrait = (superClass) =>
         return () => 'true';
       }
 
-      const [bannedByViewer, feedsWithDisabledBans] = await Promise.all([
+      const [
+        groupsWithDisabledBans,
+        managedGroups,
+        // Users banned by viewer
+        bannedByViewer,
+        // Users who banned viewer
+        viewerBannedBy,
+      ] = await Promise.all([
+        this.getGroupsWithDisabledBans(viewerId),
+        this.getManagedGroupIds(viewerId),
         this.database.getAll(
           `select u.id, u.uid from
             bans b join users u on banned_user_id = u.uid
             where b.user_id = :viewerId`,
           { viewerId },
         ),
-        this.database.getCol(
-          `select f.id from 
-                feeds f join groups_without_bans g on f.user_id = g.group_id and f.name = 'Posts'
-                where g.user_id = :viewerId`,
+        this.database.getAll(
+          `select u.id, u.uid from
+            bans b join users u on user_id = u.uid
+            where b.banned_user_id = :viewerId`,
           { viewerId },
         ),
       ]);
 
+      const managedGroupsWithDisabledBans = intersection(managedGroups, groupsWithDisabledBans);
+
+      const [feedsOfGroupsWithDisabledBans, feedsOfManagedGroupsWithDisabledBans] =
+        await Promise.all([
+          this.getUsersNamedFeedsIntIds(groupsWithDisabledBans, ['Posts']),
+          this.getUsersNamedFeedsIntIds(managedGroupsWithDisabledBans, ['Posts']),
+        ]);
+
       return (actionsTable, postsTable = 'p', useIntBanIds = false) =>
-        orJoin([
-          sqlNotIn(
-            `${actionsTable}.user_id`,
-            bannedByViewer.map((r) => r[useIntBanIds ? 'id' : 'uid']),
-          ),
-          sqlIntarrayIn(`${postsTable}.destination_feed_ids`, feedsWithDisabledBans),
+        andJoin([
+          // 1. Viewer should see actions of banned users in feedsWithDisabledBans
+          orJoin([
+            sqlNotIn(
+              `${actionsTable}.user_id`,
+              bannedByViewer.map((r) => r[useIntBanIds ? 'id' : 'uid']),
+            ),
+            sqlIntarrayIn(`${postsTable}.destination_feed_ids`, feedsOfGroupsWithDisabledBans),
+          ]),
+          // 2. Viewer should see actions of users banned him in feedsOfManagedGroupsWithDisabledBans
+          orJoin([
+            sqlNotIn(
+              `${actionsTable}.user_id`,
+              viewerBannedBy.map((r) => r[useIntBanIds ? 'id' : 'uid']),
+            ),
+            sqlIntarrayIn(
+              `${postsTable}.destination_feed_ids`,
+              feedsOfManagedGroupsWithDisabledBans,
+            ),
+          ]),
         ]);
     }
 
