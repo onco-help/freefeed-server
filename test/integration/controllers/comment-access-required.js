@@ -92,8 +92,8 @@ describe('commentAccessRequired', () => {
         expect(ctx.state, 'to satisfy', {
           comment: {
             id: comment.id,
-            body: 'Hidden comment',
-            hideType: Comment.HIDDEN_BANNED,
+            body: Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED),
+            hideType: Comment.HIDDEN_AUTHOR_BANNED,
           },
         });
       });

@@ -48,8 +48,8 @@ export async function serializeCommentsFull(comments, viewerId) {
       ser.likes = 0;
       ser.hasOwnLike = false;
 
-      ser.hideType = Comment.HIDDEN_BANNED;
-      ser.body = Comment.hiddenBody(Comment.HIDDEN_BANNED);
+      ser.hideType = Comment.HIDDEN_AUTHOR_BANNED;
+      ser.body = Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED);
       ser.createdBy = null;
     } else {
       const commentLikesData = likesInfo.find((it) => it.uid === comment.id) ?? {

@@ -20,8 +20,11 @@ export function addModel(dbAdapter) {
   class Comment {
     static VISIBLE = 0;
     static DELETED = 1;
-    static HIDDEN_BANNED = 2;
+    // The author of the comment was banned by a viewer
+    static HIDDEN_AUTHOR_BANNED = 2;
     static HIDDEN_ARCHIVED = 3;
+    // A viewer was banned by the author of the comment
+    static HIDDEN_VIEWER_BANNED = 4;
 
     id;
     intId;
@@ -40,10 +43,12 @@ export function addModel(dbAdapter) {
           return 'Visible comment';
         case this.DELETED:
           return 'Deleted comment';
-        case this.HIDDEN_BANNED:
-          return 'Hidden comment';
+        case this.HIDDEN_AUTHOR_BANNED:
+          return 'Comment from blocked user';
         case this.HIDDEN_ARCHIVED:
           return 'Archived comment';
+        case this.HIDDEN_VIEWER_BANNED:
+          return 'Comment from user who blocked you';
         default:
           return 'Hidden comment';
       }

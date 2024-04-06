@@ -204,15 +204,19 @@ export class Attachment {
 export class Comment {
   static VISIBLE: 0;
   static DELETED: 1;
-  static HIDDEN_BANNED: 2;
+  // The author of the comment was banned by a viewer
+  static HIDDEN_AUTHOR_BANNED: 2;
   static HIDDEN_ARCHIVED: 3;
+  // A viewer was banned by the author of the comment
+  static HIDDEN_VIEWER_BANNED: 4;
   id: UUID;
   intId: number;
   body: string;
   userId: Nullable<UUID>;
-  hideType: 0 | 1 | 2 | 3;
+  hideType: 0 | 1 | 2 | 3 | 4;
   postId: UUID;
   seqNumber: number;
+  static hiddenBody(hideType: number): string;
   constructor(params: { userId: UUID; body: string; postId: UUID });
   create(): Promise<void>;
   destroy(destroyedBy?: User): Promise<boolean>;

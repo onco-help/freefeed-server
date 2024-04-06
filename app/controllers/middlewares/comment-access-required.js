@@ -64,7 +64,7 @@ export function commentAccessRequired({ mustBeVisible }) {
       if (mustBeVisible) {
         throw new ForbiddenException('You have banned the author of this comment');
       } else {
-        comment.setHideType(Comment.HIDDEN_BANNED);
+        comment.setHideType(Comment.HIDDEN_AUTHOR_BANNED);
       }
     }
 

@@ -377,9 +377,11 @@ const timelinesPostsTrait = (superClass) =>
 
       const viewerIntId = viewerId ? await this._getUserIntIdByUUID(viewerId) : null;
 
-      const excludeBannedComments = params.hiddenCommentTypes.includes(Comment.HIDDEN_BANNED);
+      const excludeBannedComments = params.hiddenCommentTypes.includes(
+        Comment.HIDDEN_AUTHOR_BANNED,
+      );
       const otherExcludedTypes = params.hiddenCommentTypes.filter(
-        (t) => t !== Comment.HIDDEN_BANNED && t !== Comment.VISIBLE,
+        (t) => t !== Comment.HIDDEN_AUTHOR_BANNED && t !== Comment.VISIBLE,
       );
 
       const bannedCommentsSQL = sqlNot(notBannedSQLFabric('c'));
@@ -468,8 +470,8 @@ const timelinesPostsTrait = (superClass) =>
       for (const comm of commentsData) {
         if (comm.hide_as_banned) {
           comm.user_id = null;
-          comm.hide_type = Comment.HIDDEN_BANNED;
-          comm.body = Comment.hiddenBody(Comment.HIDDEN_BANNED);
+          comm.hide_type = Comment.HIDDEN_AUTHOR_BANNED;
+          comm.body = Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED);
           comm.c_likes = '0';
           comm.has_own_like = null;
         }
