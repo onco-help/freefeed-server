@@ -11,9 +11,6 @@ import { ForbiddenException } from '../../../app/support/exceptions';
 describe('commentAccessRequired', () => {
   beforeEach(() => cleanDB($pg_database));
 
-  const handler = (ctx, mustBeVisible = true) =>
-    commentAccessRequired({ mustBeVisible })(ctx, noop);
-
   describe('Luna created post in Selenites group, Mars wrote comment', () => {
     let /** @type {User} */
       luna,
@@ -23,8 +20,9 @@ describe('commentAccessRequired', () => {
       venus,
       /** @type {Group} */
       selenites;
-    let /** @type {Post} */ post, /** @type {Comment} */ comment;
-    let ctx;
+    let /** @type {Post} */ post,
+      /** @type {Comment} */ marsComment,
+      /** @type {Comment} */ venusComment;
 
     beforeEach(async () => {
       luna = new User({ username: 'Luna', password: 'password' });
@@ -41,35 +39,35 @@ describe('commentAccessRequired', () => {
       });
       await post.create();
 
-      comment = new Comment({
+      marsComment = new Comment({
         body: 'Comment body',
         userId: mars.id,
         postId: post.id,
       });
-      await comment.create();
-
-      ctx = {
-        params: { commentId: comment.id },
-        state: { user: null },
-      };
+      await marsComment.create();
+      venusComment = new Comment({
+        body: 'Comment body',
+        userId: venus.id,
+        postId: post.id,
+      });
+      await venusComment.create();
     });
 
     it(`should show comment to anonymous`, async () => {
-      await expect(handler(ctx), 'to be fulfilled');
+      const ctx = await checkCommentAccess(marsComment.id, null);
       expect(ctx.state, 'to satisfy', {
         post: {
           id: post.id,
         },
         comment: {
-          id: comment.id,
-          body: comment.body,
+          id: marsComment.id,
+          body: marsComment.body,
         },
       });
     });
 
     it(`should show comment to Venus`, async () => {
-      ctx.state.user = venus;
-      await expect(handler(ctx), 'to be fulfilled');
+      await expect(checkCommentAccess(marsComment.id, venus), 'to be fulfilled');
     });
 
     // commentAccessRequired includes postAccessRequired, so we will check only
@@ -78,22 +76,31 @@ describe('commentAccessRequired', () => {
       beforeEach(() => venus.ban(mars.username));
 
       it(`should not show comment to Venus`, async () => {
-        ctx.state.user = venus;
         await expect(
-          handler(ctx),
+          checkCommentAccess(marsComment.id, venus),
           'to be rejected with',
           new ForbiddenException('You have banned the author of this comment'),
         );
       });
 
       it(`should show comment with placeholder to Venus`, async () => {
-        ctx.state.user = venus;
-        await expect(handler(ctx, false), 'to be fulfilled');
+        const ctx = await checkCommentAccess(marsComment.id, venus, false);
         expect(ctx.state, 'to satisfy', {
           comment: {
-            id: comment.id,
+            id: marsComment.id,
             body: Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED),
             hideType: Comment.HIDDEN_AUTHOR_BANNED,
+          },
+        });
+      });
+
+      it(`should show comment with placeholder to Mars`, async () => {
+        const ctx = await checkCommentAccess(venusComment.id, mars, false);
+        expect(ctx.state, 'to satisfy', {
+          comment: {
+            id: venusComment.id,
+            body: Comment.hiddenBody(Comment.HIDDEN_VIEWER_BANNED),
+            hideType: Comment.HIDDEN_VIEWER_BANNED,
           },
         });
       });
@@ -102,10 +109,15 @@ describe('commentAccessRequired', () => {
         beforeEach(() => selenites.disableBansFor(venus.id));
 
         it(`should show comment to Venus`, async () => {
-          ctx.state.user = venus;
-          await expect(handler(ctx), 'to be fulfilled');
+          await expect(checkCommentAccess(marsComment.id, venus), 'to be fulfilled');
         });
       });
     });
   });
 });
+
+async function checkCommentAccess(commentId, user, mustBeVisible = true) {
+  const ctx = { params: { commentId }, state: { user } };
+  await commentAccessRequired({ mustBeVisible })(ctx, noop);
+  return ctx;
+}

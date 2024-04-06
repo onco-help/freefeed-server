@@ -343,6 +343,7 @@ const timelinesPostsTrait = (superClass) =>
       ]);
 
       const notBannedSQLFabric = await this.notBannedActionsSQLFabric(viewerId);
+      const bannedSQLsFabric = await this.bannedActionsSQLsFabric(viewerId);
 
       const allLikesSQL = `
       select
@@ -377,25 +378,36 @@ const timelinesPostsTrait = (superClass) =>
 
       const viewerIntId = viewerId ? await this._getUserIntIdByUUID(viewerId) : null;
 
-      const excludeBannedComments = params.hiddenCommentTypes.includes(
+      const excludeBannedByViewer = params.hiddenCommentTypes.includes(
         Comment.HIDDEN_AUTHOR_BANNED,
       );
-      const otherExcludedTypes = params.hiddenCommentTypes.filter(
-        (t) => t !== Comment.HIDDEN_AUTHOR_BANNED && t !== Comment.VISIBLE,
+      const excludeBannedByAuthor = params.hiddenCommentTypes.includes(
+        Comment.HIDDEN_VIEWER_BANNED,
       );
 
-      const bannedCommentsSQL = sqlNot(notBannedSQLFabric('c'));
+      const bannedOrVisibleTypes = [
+        Comment.VISIBLE,
+        Comment.HIDDEN_AUTHOR_BANNED,
+        Comment.HIDDEN_VIEWER_BANNED,
+      ];
+      const otherExcludedTypes = params.hiddenCommentTypes.filter(
+        (t) => !bannedOrVisibleTypes.includes(t),
+      );
+
+      const [bannedByViewerSQL, bannedByAuthorSQL] = bannedSQLsFabric('c');
 
       const commentFilterSQL = andJoin([
         sqlIn('c.post_id', uniqPostsIds),
-        excludeBannedComments ? sqlNot(bannedCommentsSQL) : 'true',
+        excludeBannedByViewer ? sqlNot(bannedByViewerSQL) : 'true',
+        excludeBannedByAuthor ? sqlNot(bannedByAuthorSQL) : 'true',
         sqlNotIn('c.hide_type', otherExcludedTypes),
       ]);
 
       const allCommentsSQL = pgFormat(
         `select
         ${commentFields.map((f) => `c.${f}`).join(', ')},
-        ${bannedCommentsSQL} as hide_as_banned,
+        ${excludeBannedByViewer ? 'false' : bannedByViewerSQL} as banned_by_viewer,
+        ${excludeBannedByAuthor ? 'false' : bannedByAuthorSQL} as banned_by_author,
         rank() over (partition by c.post_id order by c.created_at, c.id),
         count(*) over (partition by c.post_id),
         (select coalesce(count(*), 0) from 
@@ -419,7 +431,9 @@ const timelinesPostsTrait = (superClass) =>
         : ``;
       const commentsSQL = `
       with comments as (${allCommentsSQL})
-      select ${commentFields.join(', ')}, count, c_likes, has_own_like, hide_as_banned from comments
+      select ${commentFields.join(', ')}, count, c_likes, has_own_like,
+        banned_by_viewer, banned_by_author
+      from comments
       ${foldCommentsSql}
       order by created_at, id
     `;
@@ -468,10 +482,16 @@ const timelinesPostsTrait = (superClass) =>
       }
 
       for (const comm of commentsData) {
-        if (comm.hide_as_banned) {
+        if (comm.banned_by_viewer) {
           comm.user_id = null;
           comm.hide_type = Comment.HIDDEN_AUTHOR_BANNED;
           comm.body = Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED);
+          comm.c_likes = '0';
+          comm.has_own_like = null;
+        } else if (comm.banned_by_author) {
+          comm.user_id = null;
+          comm.hide_type = Comment.HIDDEN_VIEWER_BANNED;
+          comm.body = Comment.hiddenBody(Comment.HIDDEN_VIEWER_BANNED);
           comm.c_likes = '0';
           comm.has_own_like = null;
         }

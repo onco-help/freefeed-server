@@ -44,12 +44,15 @@ export async function serializeCommentsFull(comments, viewerId) {
       createdBy: comment.userId,
     };
 
-    if (bansMap[comment.id]) {
+    if (
+      bansMap[comment.id] === Comment.HIDDEN_AUTHOR_BANNED ||
+      bansMap[comment.id] === Comment.HIDDEN_VIEWER_BANNED
+    ) {
       ser.likes = 0;
       ser.hasOwnLike = false;
 
-      ser.hideType = Comment.HIDDEN_AUTHOR_BANNED;
-      ser.body = Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED);
+      ser.hideType = bansMap[comment.id];
+      ser.body = Comment.hiddenBody(ser.hideType);
       ser.createdBy = null;
     } else {
       const commentLikesData = likesInfo.find((it) => it.uid === comment.id) ?? {
