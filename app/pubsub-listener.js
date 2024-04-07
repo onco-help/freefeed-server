@@ -381,23 +381,29 @@ export default class PubsubListener {
 
           // A very special case: comment author is banned, but the viewer chooses
           // to see such comments as placeholders.
-          // TODO: add the 'bannedByUserIds' check and Comment.HIDDEN_VIEWER_BANNED status
-          if (
-            type === eventNames.COMMENT_CREATED &&
-            bannedUserIds.includes(data.comments.createdBy)
-          ) {
-            const user = await dbAdapter.getUserById(userId);
+          if (type === eventNames.COMMENT_CREATED) {
+            let hideType = null;
 
-            if (user.getHiddenCommentTypes().includes(Comment.HIDDEN_AUTHOR_BANNED)) {
-              return;
+            if (bannedUserIds.includes(data.comments.createdBy)) {
+              hideType = Comment.HIDDEN_AUTHOR_BANNED;
+            } else if (bannedByUserIds.includes(data.comments.createdBy)) {
+              hideType = Comment.HIDDEN_VIEWER_BANNED;
             }
 
-            const { createdBy } = data.comments;
-            data.comments.hideType = Comment.HIDDEN_AUTHOR_BANNED;
-            data.comments.body = Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED);
-            data.comments.createdBy = null;
-            data.users = data.users.filter((u) => u.id !== createdBy);
-            data.admins = data.admins.filter((u) => u.id !== createdBy);
+            if (hideType !== null) {
+              const user = await dbAdapter.getUserById(userId);
+
+              if (user.getHiddenCommentTypes().includes(hideType)) {
+                return;
+              }
+
+              const { createdBy } = data.comments;
+              data.comments.hideType = hideType;
+              data.comments.body = Comment.hiddenBody(hideType);
+              data.comments.createdBy = null;
+              data.users = data.users.filter((u) => u.id !== createdBy);
+              data.admins = data.admins.filter((u) => u.id !== createdBy);
+            }
           }
         }
 
