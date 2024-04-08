@@ -82,13 +82,14 @@ describe('Symmetric bans', () => {
             ]);
           });
 
-          it(`should show Luna's comments to Mars as placeholder`, async () => {
+          it(`should show Luna's comments to Mars with _hideType`, async () => {
             const resp = await fetchPost(post.id, mars);
             expect(resp.comments, 'to satisfy', [
               {
-                body: Comment.hiddenBody(Comment.HIDDEN_VIEWER_BANNED),
-                createdBy: null,
-                hideType: Comment.HIDDEN_VIEWER_BANNED,
+                body: 'Comment from Luna',
+                createdBy: luna.user.id,
+                hideType: Comment.VISIBLE,
+                _hideType: Comment.HIDDEN_VIEWER_BANNED,
               },
               { body: 'Comment from Mars', createdBy: mars.user.id },
             ]);
@@ -114,13 +115,14 @@ describe('Symmetric bans', () => {
             ]);
           });
 
-          it(`should show Luna's comments to Mars as placeholder`, async () => {
+          it(`should show Luna's comments to Mars with _hideType`, async () => {
             const resp = await fetchPost(post.id, mars);
             expect(resp.comments, 'to satisfy', [
               {
-                body: Comment.hiddenBody(Comment.HIDDEN_VIEWER_BANNED),
-                createdBy: null,
-                hideType: Comment.HIDDEN_VIEWER_BANNED,
+                body: 'Comment from Luna',
+                createdBy: luna.user.id,
+                hideType: Comment.VISIBLE,
+                _hideType: Comment.HIDDEN_VIEWER_BANNED,
               },
               { body: 'Comment from Mars', createdBy: mars.user.id },
             ]);
@@ -276,9 +278,10 @@ describe('Symmetric bans', () => {
           );
           await expect(test, 'when fulfilled', 'to satisfy', {
             comments: {
-              hideType: Comment.HIDDEN_VIEWER_BANNED,
-              body: Comment.hiddenBody(Comment.HIDDEN_VIEWER_BANNED),
-              createdBy: null,
+              hideType: Comment.VISIBLE,
+              _hideType: Comment.HIDDEN_VIEWER_BANNED,
+              body: 'Comment from Luna',
+              createdBy: luna.user.id,
             },
           });
         });

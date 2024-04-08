@@ -386,8 +386,8 @@ export default class PubsubListener {
 
             if (bannedUserIds.includes(data.comments.createdBy)) {
               hideType = Comment.HIDDEN_AUTHOR_BANNED;
-            } else if (bannedByUserIds.includes(data.comments.createdBy)) {
-              hideType = Comment.HIDDEN_VIEWER_BANNED;
+              // } else if (bannedByUserIds.includes(data.comments.createdBy)) {
+              //   hideType = Comment.HIDDEN_VIEWER_BANNED;
             }
 
             if (hideType !== null) {
@@ -403,6 +403,8 @@ export default class PubsubListener {
               data.comments.createdBy = null;
               data.users = data.users.filter((u) => u.id !== createdBy);
               data.admins = data.admins.filter((u) => u.id !== createdBy);
+            } else if (bannedByUserIds.includes(data.comments.createdBy)) {
+              data.comments._hideType = Comment.HIDDEN_VIEWER_BANNED;
             }
           }
         }

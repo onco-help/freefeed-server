@@ -64,13 +64,17 @@ export function commentAccessRequired({ mustBeVisible }) {
 
     if (mustBeVisible && banHideType === Comment.HIDDEN_AUTHOR_BANNED) {
       throw new ForbiddenException('You have banned the author of this comment');
-    } else if (mustBeVisible && banHideType === Comment.HIDDEN_VIEWER_BANNED) {
-      throw new ForbiddenException('The author of this comment has banned you');
+      // } else if (mustBeVisible && banHideType === Comment.HIDDEN_VIEWER_BANNED) {
+      //   throw new ForbiddenException('The author of this comment has banned you');
     } else if (banHideType) {
       comment.setHideType(banHideType);
     }
 
-    if (comment.hideType !== Comment.VISIBLE && mustBeVisible) {
+    if (
+      comment.hideType !== Comment.VISIBLE &&
+      banHideType !== Comment.HIDDEN_VIEWER_BANNED &&
+      mustBeVisible
+    ) {
       throw new ForbiddenException(`You don't have access to this comment`);
     }
 
