@@ -31,25 +31,28 @@ export function init(passport) {
             return;
           }
 
-          if (!user?.isActive) {
-            if (user?.isResumable) {
-              done({
-                message: 'Your account is now inactive but you can resume it.',
-                userId: user.id,
-                isResumable: true,
-              });
-            } else {
-              done({ message: 'We could not find the nickname you provided.' });
-            }
+          if (!user || (!user.isActive && !user.isResumable)) {
+            done({ message: 'We could not find the nickname you provided.' });
+          }
 
+          // Here the user is active or is resumable
+
+          const validPwd = await user.validPassword(clearPassword);
+
+          if (!validPwd) {
+            done({
+              message: user.isActive
+                ? 'The password you provided does not match the password in our system.'
+                : 'We could not find the nickname you provided.',
+            });
             return;
           }
 
-          const valid = await user.validPassword(clearPassword);
-
-          if (!valid) {
+          if (user.isResumable) {
             done({
-              message: 'The password you provided does not match the password in our system.',
+              message: 'Your account is now inactive but you can resume it.',
+              userId: user.id,
+              isResumable: true,
             });
             return;
           }

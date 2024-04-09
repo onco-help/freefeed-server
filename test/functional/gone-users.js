@@ -560,6 +560,15 @@ describe('Gone users', () => {
       expect(resp, 'to satisfy', { __httpCode: 401, resumeToken: expect.it('to be a string') });
     });
 
+    it(`should not allow Luna resume themself with wrong password`, async () => {
+      const resp = await performJSONRequest('POST', `/v1/session`, {
+        username: luna.username,
+        password: `${luna.password}123`,
+      });
+
+      expect(resp, 'to satisfy', { __httpCode: 401, resumeToken: undefined });
+    });
+
     it(`should allow Luna resume themself`, async () => {
       const { resumeToken } = await performJSONRequest('POST', `/v1/session`, {
         username: luna.username,
