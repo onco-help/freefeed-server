@@ -1,8 +1,9 @@
 import { intersection } from 'lodash';
 
 import { List } from '../open-lists';
+import { Comment } from '../../models';
 
-import { andJoin, orJoin, sqlIntarrayIn, sqlNot, sqlNotIn } from './utils';
+import { andJoin, orJoin, sqlIn, sqlIntarrayIn, sqlNot, sqlNotIn } from './utils';
 
 const visibilityTrait = (superClass) =>
   class extends superClass {
@@ -79,33 +80,87 @@ const visibilityTrait = (superClass) =>
      * See doc/visibility-rules.md for the rules details.
      */
     async notBannedActionsSQLFabric(viewerId = null) {
+      const fabric2 = await this.bannedActionsSQLsFabric(viewerId);
+      return (actionsTable, postsTable = 'p', useIntBanIds = false) =>
+        sqlNot(orJoin(fabric2(actionsTable, postsTable, useIntBanIds)));
+    }
+
+    /**
+     * This function creates a fabric that returns array of _two_ SQL
+     * sub-queries:
+     * 1. For actions that are invisible because the author of the action is
+     *    banned by the viewer, and
+     * 2. For actions that are invisible because the viewer is banned by the
+     *    author of the action.
+     *
+     * See doc/visibility-rules.md for the rules details.
+     */
+    async bannedActionsSQLsFabric(viewerId = null) {
       if (!viewerId) {
-        return () => 'true';
+        return () => ['false', 'false'];
       }
 
-      const [bannedByViewer, feedsWithDisabledBans] = await Promise.all([
+      const [
+        groupsWithDisabledBans,
+        managedGroups,
+        // Users banned by viewer
+        bannedByViewer,
+        // Users who banned viewer
+        viewerBannedBy,
+      ] = await Promise.all([
+        this.getGroupsWithDisabledBans(viewerId),
+        this.getManagedGroupIds(viewerId),
         this.database.getAll(
           `select u.id, u.uid from
             bans b join users u on banned_user_id = u.uid
             where b.user_id = :viewerId`,
           { viewerId },
         ),
-        this.database.getCol(
-          `select f.id from 
-                feeds f join groups_without_bans g on f.user_id = g.group_id and f.name = 'Posts'
-                where g.user_id = :viewerId`,
+        this.database.getAll(
+          `select u.id, u.uid from
+            bans b join users u on user_id = u.uid
+            where b.banned_user_id = :viewerId`,
           { viewerId },
         ),
       ]);
 
-      return (actionsTable, postsTable = 'p', useIntBanIds = false) =>
-        orJoin([
-          sqlNotIn(
+      const managedGroupsWithDisabledBans = intersection(managedGroups, groupsWithDisabledBans);
+
+      const [feedsOfGroupsWithDisabledBans, feedsOfManagedGroupsWithDisabledBans] =
+        await Promise.all([
+          this.getUsersNamedFeedsIntIds(groupsWithDisabledBans, ['Posts']),
+          this.getUsersNamedFeedsIntIds(managedGroupsWithDisabledBans, ['Posts']),
+        ]);
+
+      return (actionsTable, postsTable = 'p', useIntBanIds = false) => [
+        // 1. Actions that are invisible because the author of the action is banned by the viewer
+        andJoin([
+          // The author of action is banned by the viewer
+          sqlIn(
             `${actionsTable}.user_id`,
             bannedByViewer.map((r) => r[useIntBanIds ? 'id' : 'uid']),
           ),
-          sqlIntarrayIn(`${postsTable}.destination_feed_ids`, feedsWithDisabledBans),
-        ]);
+          // And the post is not in some group with bans disabled
+          sqlNot(
+            sqlIntarrayIn(`${postsTable}.destination_feed_ids`, feedsOfGroupsWithDisabledBans),
+          ),
+        ]),
+        // 2. Actions that are invisible because the viewer is banned by the author of the action
+        andJoin([
+          // The viewer is banned by the author of the action
+          sqlIn(
+            `${actionsTable}.user_id`,
+            viewerBannedBy.map((r) => r[useIntBanIds ? 'id' : 'uid']),
+          ),
+          // And the post is not in some group, managed bi viewer, with bans disabled
+          sqlNot(
+            sqlIntarrayIn(
+              `${postsTable}.destination_feed_ids`,
+              feedsOfManagedGroupsWithDisabledBans,
+            ),
+          ),
+        ]),
+      ];
     }
 
     async isPostVisibleForViewer(postId, viewerId = null) {
@@ -126,10 +181,14 @@ const visibilityTrait = (superClass) =>
     }
 
     async areCommentsBannedForViewerAssoc(commentIds, viewerId = null) {
-      const notBannedSQLFabric = await this.notBannedActionsSQLFabric(viewerId);
+      const bannedSQLsFabric = await this.bannedActionsSQLsFabric(viewerId);
+      const [bannedByViewerSQL, bannedByAuthorSQL] = bannedSQLsFabric('c');
       const rows = await this.database.getAll(
-        `select c.uid, ${sqlNot(notBannedSQLFabric('c'))} as banned from 
-            comments c
+        `select
+            c.uid,
+            ${bannedByViewerSQL} as banned_by_viewer,
+            ${bannedByAuthorSQL} as banned_by_author
+         from comments c
             join posts p on p.uid = c.post_id
             where c.uid = any(:commentIds)
           `,
@@ -138,7 +197,13 @@ const visibilityTrait = (superClass) =>
       const result = {};
 
       for (const row of rows) {
-        result[row.uid] = row.banned;
+        if (row.banned_by_viewer) {
+          result[row.uid] = Comment.HIDDEN_AUTHOR_BANNED;
+        } else if (row.banned_by_author) {
+          result[row.uid] = Comment.HIDDEN_VIEWER_BANNED;
+        } else {
+          result[row.uid] = false;
+        }
       }
 
       return result;
@@ -229,19 +294,35 @@ const visibilityTrait = (superClass) =>
       );
 
       const [
+        // Users banned by comment author
+        bannedByAuthor,
         // Users who banned comment author
         authorBannedBy,
         usersDisabledBans,
       ] = await Promise.all([
+        this.getUserBansIds(commentAuthor),
         this.getUserIdsWhoBannedUser(commentAuthor),
         this.getUsersWithDisabledBansInGroups(postGroups),
       ]);
 
+      // Users who choose to see banned posts in any of post group
       const allWhoDisabledBans = usersDisabledBans.map((r) => r.user_id);
+      // Users who are admins of any post group and choose to see banned posts in it
+      const adminsWhoDisabledBans = usersDisabledBans
+        .filter((r) => r.is_admin)
+        .map((r) => r.user_id);
 
       return List.intersection(
         postViewers,
-        List.inverse(List.difference(authorBannedBy, allWhoDisabledBans)),
+        // List.inverse(List.difference(authorBannedBy, allWhoDisabledBans)),
+        List.inverse(
+          List.union(
+            // All who banned comment author, except those who disabled bans
+            List.difference(authorBannedBy, allWhoDisabledBans),
+            // All banned by comment author, except ADMINS who disabled bans
+            List.difference(bannedByAuthor, adminsWhoDisabledBans),
+          ),
+        ),
       );
     }
 

@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [2.19.0] - Not released
+#### Changed
+- The bans are fully symmetrical now. If A bans B, then:
+  - A doesn't see B's posts, comments content, likes and comment likes;
+  - B doesn't see A's posts, comments content, likes and comment likes.
+  
+  By default, comments are displayed as placeholders, but the viewer can turn
+  them off completely. Also, one can disable bans in some groups, see the
+  [2.7.0] release for the bans logic in this case.
+- /!\ The ban symmetry is DELIBERATELY BROKEN for now. It works for likes and
+  comment likes, but the A's comments content is still visible for B. Such
+  comments have an additional `_hideType = 4` field in API responses ('4' is the
+  `Comment.HIDDEN_VIEWER_BANNED` constant). The client code can hide such
+  comments on its level.
 
 ## [2.18.5] - 2024-04-09
 ### Fixed

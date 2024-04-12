@@ -122,6 +122,8 @@ export class DbAdapter {
   getUsersByNormEmail(email: string): Promise<User[]>;
   existsEmail(email: string): Promise<boolean>;
   existsNormEmail(email: string): Promise<boolean>;
+  getUsersBansIdsMap(ids: UUID[]): Promise<Map<UUID, UUID[]>>;
+  getUsersBanedByIdsMap(ids: UUID[]): Promise<Map<UUID, UUID[]>>;
   getUserIdsWhoBannedUser(id: UUID): Promise<UUID[]>;
   getFeedOwnerById(id: UUID): Promise<User | Group | null>;
   getFeedOwnerByUsername(name: string): Promise<User | Group | null>;
@@ -181,6 +183,9 @@ export class DbAdapter {
   // Bans
   getUserBansIds(id: UUID): Promise<UUID[]>;
   getGroupsWithDisabledBans(userId: UUID, groupIds?: UUID[]): Promise<UUID[]>;
+  getUsersWithDisabledBansInGroups(
+    groupIds: UUID[],
+  ): Promise<{ user_id: UUID; is_admin: boolean }[]>;
   disableBansInGroup(userId: UUID, groupId: UUID, doDisable: boolean): Promise<boolean>;
 
   // Posts

@@ -183,16 +183,20 @@ describe('EventService', () => {
         });
 
         it('should not create backlink_in_comment event for mentioned user who banned post author', async () => {
+          // Mars banned Luna
           await mars.ban(luna.username);
+          // Luna shouldn't allow to see Mars' comment, so no event will be created for her
           comment = await createComment(luna, venusPost, `Mentioning ${marsPost.id}`);
           await expectBacklinkEvents(mars, []);
           await mars.unban(luna.username);
         });
 
-        it('should create (!) backlink_in_comment event for banned mentioned user', async () => {
+        it('should not create backlink_in_comment event for banned mentioned user', async () => {
+          // Luna banned Mars
           await luna.ban(mars.username);
+          // Mars shouldn't allow to see Luna's comment, so no event will be created for him
           comment = await createComment(luna, venusPost, `Mentioning ${marsPost.id}`);
-          await expectBacklinkEvents(mars, [await backlinkInCommentEvent(comment, marsPost)]);
+          await expectBacklinkEvents(mars, []);
           await luna.unban(mars.username);
         });
 
@@ -451,10 +455,12 @@ describe('EventService', () => {
           await mars.unban(luna.username);
         });
 
-        it('should create (!) backlink_in_comment event for banned mentioned user', async () => {
+        it('should not create backlink_in_comment event for banned mentioned user', async () => {
+          // Luna banned Mars
           await luna.ban(mars.username);
+          // Mars shouldn't allow to see Luna's comment, so no event will be created for him
           comment = await createComment(luna, venusPost, `Mentioning ${marsComment.id}`);
-          await expectBacklinkEvents(mars, [await backlinkInCommentEvent(comment, marsComment)]);
+          await expectBacklinkEvents(mars, []);
           await luna.unban(mars.username);
         });
 

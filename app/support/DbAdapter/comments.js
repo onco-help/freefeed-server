@@ -171,45 +171,6 @@ const commentsTrait = (superClass) =>
       return parseInt(res[0].count);
     }
 
-    async getAllPostCommentsWithoutBannedUsers(postId, viewerUserId) {
-      let query = this.database('comments').orderBy('created_at', 'asc').where('post_id', postId);
-
-      const [viewer, bannedUsersIds] = await Promise.all([
-        viewerUserId ? this.getUserById(viewerUserId) : null,
-        viewerUserId ? this.getUserBansIds(viewerUserId) : [],
-      ]);
-
-      if (viewerUserId) {
-        const hiddenCommentTypes = viewer.getHiddenCommentTypes();
-
-        if (hiddenCommentTypes.length > 0) {
-          if (hiddenCommentTypes.includes(Comment.HIDDEN_BANNED) && bannedUsersIds.length > 0) {
-            query = query.where('user_id', 'not in', bannedUsersIds);
-          }
-
-          const ht = hiddenCommentTypes.filter(
-            (t) => t !== Comment.HIDDEN_BANNED && t !== Comment.VISIBLE,
-          );
-
-          if (ht.length > 0) {
-            query = query.where('hide_type', 'not in', ht);
-          }
-        }
-      }
-
-      const responses = await query;
-      const comments = responses.map((comm) => {
-        if (bannedUsersIds.includes(comm.user_id)) {
-          comm.user_id = null;
-          comm.hide_type = Comment.HIDDEN_BANNED;
-          comm.body = Comment.hiddenBody(Comment.HIDDEN_BANNED);
-        }
-
-        return comm;
-      });
-      return comments.map(initCommentObject);
-    }
-
     _deletePostComments(postId) {
       return this.database('comments').where({ post_id: postId }).delete();
     }

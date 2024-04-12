@@ -38,13 +38,14 @@ Comments, Likes and Comment likes (hereinafter "actions") shares the same logic.
 
 Actions on the given post is not visible for viewer if the post is not visible.
 
-Action is visible when:
+Action is visible when (AND-joined):
 * The action author is not banned by viewer OR post is published to a group
-where the viewer had disabled bans. Thus, all actions in groups with disabled
-bans are visible.
+  where the viewer had disabled bans.
+* Viewer is not banned by the action author OR post is published to a group where
+  the viewer *is admin* and had disabled bans.
 
 If the post is visible but the comment is not, the comment may appear as a stub
-(with hideType = HIDDEN_BANNED). It depends on *hideCommentsOfTypes* field of
+(with hideType = HIDDEN_AUTHOR_BANNED). It depends on *hideCommentsOfTypes* field of
 viewer properties.
 
 Handling the visibility of comments is a bit special (see the
@@ -57,13 +58,14 @@ to comment, the middleware acts as follows:
 
 ### In code
 The action visibility rules calculates in the following places:
-* app/support/DbAdapter/visibility.js, notBannedSQLFabric function. This makes
-  SQL filter fabric to select non-banned actions.
+* app/support/DbAdapter/visibility.js, bannedActionsSQLsFabric and
+  notBannedActionsSQLFabric functions. This functions makes SQL filter fabrics
+  to select (non-)banned actions.
 * app/support/DbAdapter/visibility.js, getUsersWhoCanSeeComment function. This
   function returns list of users (IDs) who can see the given comment.
-* app/support/DbAdapter/visibility.js, isCommentBannedForViewer function. This
-  function returns true if comment is banned (and should be hidden) for the
-  given viewer.
+* app/support/DbAdapter/visibility.js, isCommentBannedForViewer and
+  areCommentsBannedForViewerAssoc functions. This functions checks if comment(s)
+  is/are banned (and should be hidden) for the given viewer.
 * app/pubsub-listener.js, broadcastMessage function checks access for actions.
 * app/controllers/middlewares/comment-access-required.js, the
   'commentAccessRequired' middleware.

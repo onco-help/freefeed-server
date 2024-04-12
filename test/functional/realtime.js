@@ -425,7 +425,7 @@ describe('Realtime (Socket.io)', () => {
               );
             });
 
-            it("Jupiter gets notifications about comment likes to Mars' comment", async () => {
+            it("Jupiter doesn't get notifications about comment likes to Mars' comment", async () => {
               const {
                 context: { commentLikeRealtimeMsg: msg },
               } = await expect(
@@ -434,14 +434,10 @@ describe('Realtime (Socket.io)', () => {
                 lunaPost.id,
                 'with comment having id',
                 marsComment.id,
-                'to get comment_like:new event from',
+                'not to get comment_like:new event from',
                 lunaContext,
               );
-              expect(
-                msg,
-                'to satisfy',
-                commentHavingNLikesExpectation(1, false, lunaContext.user.id),
-              );
+              expect(msg, 'to be', null);
             });
           });
         });
@@ -694,7 +690,7 @@ describe('Realtime (Socket.io)', () => {
               );
             });
 
-            it("Jupiter gets notifications about comment likes to Mars' comment", async () => {
+            it("Jupiter doesn't get notifications about comment likes to Mars' comment", async () => {
               const {
                 context: { commentLikeRealtimeMsg: msg },
               } = await expect(
@@ -703,14 +699,10 @@ describe('Realtime (Socket.io)', () => {
                 lunaTimeline,
                 'with comment having id',
                 marsComment.id,
-                'to get comment_like:new event from',
+                'not to get comment_like:new event from',
                 lunaContext,
               );
-              expect(
-                msg,
-                'to satisfy',
-                commentHavingNLikesExpectation(1, false, lunaContext.user.id),
-              );
+              expect(msg, 'to be', null);
             });
           });
         });
@@ -1136,7 +1128,7 @@ describe('Realtime (Socket.io)', () => {
               );
             });
 
-            it("Jupiter gets notifications about comment likes to Mars' comment", async () => {
+            it("Jupiter doesn't notifications about comment likes to Mars' comment", async () => {
               const {
                 context: { commentLikeRealtimeMsg: msg },
               } = await expect(
@@ -1145,14 +1137,10 @@ describe('Realtime (Socket.io)', () => {
                 lunaCommentsFeed,
                 'with comment having id',
                 marsComment.id,
-                'to get comment_like:new event from',
+                'not to get comment_like:new event from',
                 lunaContext,
               );
-              expect(
-                msg,
-                'to satisfy',
-                commentHavingNLikesExpectation(1, false, lunaContext.user.id),
-              );
+              expect(msg, 'to be', null);
             });
           });
         });
