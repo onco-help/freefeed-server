@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comments have an additional `_hideType = 4` field in API responses ('4' is the
   `Comment.HIDDEN_VIEWER_BANNED` constant). The client code can hide such
   comments on its level.
+### Fixed
+- A user's unread directs counter now takes into account the visibility of
+  direct messages and comments on them.
 
 ## [2.18.5] - 2024-04-09
 ### Fixed
