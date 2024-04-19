@@ -442,8 +442,8 @@ describe('CommentsController', () => {
             __httpCode: 200,
             comments: {
               id: commentIds[1],
-              body: Comment.hiddenBody(Comment.HIDDEN_BANNED),
-              hideType: Comment.HIDDEN_BANNED,
+              body: Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED),
+              hideType: Comment.HIDDEN_AUTHOR_BANNED,
               createdBy: null,
             },
           });
@@ -558,8 +558,8 @@ describe('CommentsController', () => {
             __httpCode: 200,
             comments: {
               id: commentIds[1],
-              body: Comment.hiddenBody(Comment.HIDDEN_BANNED),
-              hideType: Comment.HIDDEN_BANNED,
+              body: Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED),
+              hideType: Comment.HIDDEN_AUTHOR_BANNED,
               createdBy: null,
             },
           });

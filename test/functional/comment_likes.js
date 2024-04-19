@@ -723,14 +723,14 @@ describe('Comment likes', () => {
           res = await getCommentLikes(jupiterComment2.id, pluto);
           const responseJson = await res.json();
 
+          // Pluto, being banned by Luna, shouldn't be able to see Luna's like
           expect(responseJson, 'to satisfy', {
-            likes: expect.it('to be an array').and('to be non-empty').and('to have length', 3),
+            likes: expect.it('to be an array').and('to be non-empty').and('to have length', 2),
             users: expect.it('to be an array').and('to have items satisfying', schema.user),
           });
 
           expect(responseJson.likes[0].userId, 'to be', pluto.user.id);
-          expect(responseJson.likes[1].userId, 'to be', luna.user.id);
-          expect(responseJson.likes[2].userId, 'to be', mars.user.id);
+          expect(responseJson.likes[1].userId, 'to be', mars.user.id);
         });
       });
     });

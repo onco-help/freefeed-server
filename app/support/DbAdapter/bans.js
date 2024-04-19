@@ -13,9 +13,9 @@ const bansTrait = (superClass) =>
     }
 
     /**
-     * Returns Map.<userId, bannedUserIds>
+     * Returns Map<userId, bannedUserIds>
      * @param {string[]} userIds
-     * @return {Map.<string, string[]>}
+     * @return {Promise<Map<string, string[]>>}
      */
     async getUsersBansIdsMap(userIds) {
       const { rows } = await this.database.raw(
@@ -27,6 +27,23 @@ const bansTrait = (superClass) =>
         { userIds },
       );
       return new Map(rows.map((r) => [r.user_id, r.bans]));
+    }
+
+    /**
+     * Returns Map<userId, whoBannedUserIds>
+     * @param {string[]} userIds
+     * @return {Promise<Map<string, string[]>>}
+     */
+    async getUsersBanedByIdsMap(userIds) {
+      const { rows } = await this.database.raw(
+        `
+          select banned_user_id, array_agg(user_id) as bans
+          from bans where banned_user_id = any(:userIds)
+          group by banned_user_id
+          `,
+        { userIds },
+      );
+      return new Map(rows.map((r) => [r.banned_user_id, r.bans]));
     }
 
     async getUserIdsWhoBannedUser(userId) {

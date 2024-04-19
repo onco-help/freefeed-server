@@ -52,7 +52,10 @@ module.exports = {
     defaults: {
       // User does't want to view banned comments by default (for compatibility
       // with old tests)
-      hideCommentsOfTypes: [2 /* Comment.HIDDEN_BANNED */],
+      hideCommentsOfTypes: [
+        2, // Comment.HIDDEN_AUTHOR_BANNED
+        4, // Comment.HIDDEN_VIEWER_BANNED
+      ],
     },
   },
 

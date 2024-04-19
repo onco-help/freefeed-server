@@ -54,7 +54,7 @@ describe('Hidden comments', () => {
         expect(reply.comments, 'to have length', 2);
         const venusComment = reply.comments.find((c) => c.id === reply.posts.comments[0]);
         const lunaComment = reply.comments.find((c) => c.id === reply.posts.comments[1]);
-        expect(venusComment, 'to satisfy', { hideType: Comment.HIDDEN_BANNED });
+        expect(venusComment, 'to satisfy', { hideType: Comment.HIDDEN_AUTHOR_BANNED });
         expect(lunaComment, 'to satisfy', { hideType: Comment.VISIBLE });
       });
 
@@ -64,7 +64,7 @@ describe('Hidden comments', () => {
         expect(reply.comments, 'to have length', 2);
         const venusComment = reply.comments.find((c) => c.id === postInReply.comments[0]);
         const lunaComment = reply.comments.find((c) => c.id === postInReply.comments[1]);
-        expect(venusComment, 'to satisfy', { hideType: Comment.HIDDEN_BANNED });
+        expect(venusComment, 'to satisfy', { hideType: Comment.HIDDEN_AUTHOR_BANNED });
         expect(lunaComment, 'to satisfy', { hideType: Comment.VISIBLE });
       });
 
@@ -85,8 +85,8 @@ describe('Hidden comments', () => {
           await expect(test, 'when fulfilled', 'to satisfy', {
             comments: {
               createdBy: null,
-              hideType: Comment.HIDDEN_BANNED,
-              body: Comment.hiddenBody(Comment.HIDDEN_BANNED),
+              hideType: Comment.HIDDEN_AUTHOR_BANNED,
+              body: Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED),
             },
           });
         });
@@ -96,7 +96,7 @@ describe('Hidden comments', () => {
     describe("Luna doesn't want to see comments from banned users", () => {
       beforeEach(async () => {
         await updateUserAsync(luna, {
-          preferences: { hideCommentsOfTypes: [Comment.HIDDEN_BANNED] },
+          preferences: { hideCommentsOfTypes: [Comment.HIDDEN_AUTHOR_BANNED] },
         });
       });
 
@@ -123,7 +123,7 @@ describe('Hidden comments', () => {
         const reply1 = await fetchPost(post.id, mars);
         expect(reply1.comments, 'to have length', 2);
         const venusComment = reply1.comments.find((c) => c.id === reply1.posts.comments[0]);
-        expect(venusComment, 'to satisfy', { hideType: Comment.HIDDEN_BANNED });
+        expect(venusComment, 'to satisfy', { hideType: Comment.HIDDEN_AUTHOR_BANNED });
 
         const delReply = await removeCommentAsync(mars, venusComment.id);
         delReply.status.should.eql(200);

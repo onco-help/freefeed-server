@@ -24,7 +24,12 @@ const schema = {
       uniqueItems: true,
       items: {
         type: 'integer',
-        enum: [commentModel.DELETED, commentModel.HIDDEN_BANNED, commentModel.HIDDEN_ARCHIVED],
+        enum: [
+          commentModel.DELETED,
+          commentModel.HIDDEN_AUTHOR_BANNED,
+          commentModel.HIDDEN_ARCHIVED,
+          commentModel.HIDDEN_VIEWER_BANNED,
+        ],
       },
     },
     sendNotificationsDigest: {

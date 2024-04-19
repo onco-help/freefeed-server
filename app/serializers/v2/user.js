@@ -40,6 +40,7 @@ export async function serializeSelfUser(user) {
       user.getUnreadNotificationsNumber(),
       user.getStatistics(),
     ]);
+  result.unreadDirectsNumber = result.unreadDirectsNumber.toString();
   result.youCan = ['post'];
   result.theyDid = [];
 

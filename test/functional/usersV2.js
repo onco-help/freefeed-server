@@ -269,7 +269,7 @@ describe('UsersControllerV2', () => {
     });
 
     it('should allow to update preferences with valid value', async () => {
-      const preferences = { hideCommentsOfTypes: [Comment.HIDDEN_BANNED] };
+      const preferences = { hideCommentsOfTypes: [Comment.HIDDEN_AUTHOR_BANNED] };
       const res = await updateUserAsync(luna, { preferences });
       const data = await res.json();
       expect(data, 'to satisfy', { users: { preferences } });

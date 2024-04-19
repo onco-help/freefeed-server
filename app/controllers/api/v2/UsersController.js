@@ -42,7 +42,7 @@ export default class UsersController {
 
     try {
       const unreadDirectsNumber = await dbAdapter.getUnreadDirectsNumber(ctx.state.user.id);
-      ctx.body = { unread: unreadDirectsNumber };
+      ctx.body = { unread: unreadDirectsNumber.toString() };
       monitor.increment('users.unread-directs-requests');
     } finally {
       timer.stop();
