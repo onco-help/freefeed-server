@@ -488,20 +488,15 @@ const timelinesPostsTrait = (superClass) =>
           comm.body = Comment.hiddenBody(Comment.HIDDEN_AUTHOR_BANNED);
           comm.c_likes = '0';
           comm.has_own_like = null;
-          // } else if (comm.banned_by_author) {
-          //   comm.user_id = null;
-          //   comm.hide_type = Comment.HIDDEN_VIEWER_BANNED;
-          //   comm.body = Comment.hiddenBody(Comment.HIDDEN_VIEWER_BANNED);
-          //   comm.c_likes = '0';
-          //   comm.has_own_like = null;
+        } else if (comm.banned_by_author) {
+          comm.user_id = null;
+          comm.hide_type = Comment.HIDDEN_VIEWER_BANNED;
+          comm.body = Comment.hiddenBody(Comment.HIDDEN_VIEWER_BANNED);
+          comm.c_likes = '0';
+          comm.has_own_like = null;
         }
 
         const comment = initCommentObject(comm);
-
-        if (comm.banned_by_author) {
-          comment._hideType = Comment.HIDDEN_VIEWER_BANNED;
-        }
-
         comment.likes = parseInt(comm.c_likes);
         comment.hasOwnLike = Boolean(comm.has_own_like);
         results[comm.post_id].comments.push(comment);

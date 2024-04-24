@@ -45,8 +45,8 @@ export async function serializeCommentsFull(comments, viewerId) {
     };
 
     if (
-      bansMap[comment.id] === Comment.HIDDEN_AUTHOR_BANNED // ||
-      // bansMap[comment.id] === Comment.HIDDEN_VIEWER_BANNED
+      bansMap[comment.id] === Comment.HIDDEN_AUTHOR_BANNED ||
+      bansMap[comment.id] === Comment.HIDDEN_VIEWER_BANNED
     ) {
       ser.likes = 0;
       ser.hasOwnLike = false;
@@ -62,10 +62,6 @@ export async function serializeCommentsFull(comments, viewerId) {
       ser.likes = parseInt(commentLikesData.c_likes);
       ser.hasOwnLike = commentLikesData.has_own_like;
       userIds.add(comment.userId);
-
-      if (bansMap[comment.id]) {
-        ser._hideType = bansMap[comment.id];
-      }
     }
 
     return ser;
