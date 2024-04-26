@@ -14,7 +14,6 @@ export function serializeComment(comment) {
       'createdAt',
       'updatedAt',
       'hideType',
-      '_hideType',
       'likes',
       'hasOwnLike',
       'seqNumber',

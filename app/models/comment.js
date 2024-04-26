@@ -44,11 +44,11 @@ export function addModel(dbAdapter) {
         case this.DELETED:
           return 'Deleted comment';
         case this.HIDDEN_AUTHOR_BANNED:
-          return 'Comment from blocked user';
+          return 'Comment from a blocked user';
         case this.HIDDEN_ARCHIVED:
           return 'Archived comment';
         case this.HIDDEN_VIEWER_BANNED:
-          return 'Comment from user who blocked you';
+          return 'Comment from a user who blocked you';
         default:
           return 'Hidden comment';
       }
