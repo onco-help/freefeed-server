@@ -177,10 +177,12 @@ describe('PrivateGroups', () => {
   });
 
   describe('#update', () => {
-    const context = {};
+    let context;
     let group;
 
-    beforeEach(funcTestHelper.createUserCtx(context, 'Luna', 'password'));
+    beforeEach(async () => {
+      context = await funcTestHelper.createTestUser('luna');
+    });
 
     beforeEach((done) => {
       request
@@ -296,11 +298,11 @@ describe('PrivateGroups', () => {
   });
 
   describe('#unadmin', () => {
-    const adminContext = {};
-    const nonAdminContext = {};
+    let adminContext;
 
-    beforeEach(funcTestHelper.createUserCtx(adminContext, 'Luna', 'password'));
-    beforeEach(funcTestHelper.createUserCtx(nonAdminContext, 'yole', 'wordpass'));
+    beforeEach(async () => {
+      [adminContext] = await funcTestHelper.createTestUsers(['luna', 'yole']);
+    });
 
     beforeEach((done) => {
       request

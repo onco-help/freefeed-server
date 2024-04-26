@@ -1155,13 +1155,16 @@ describe('Privates', () => {
   });
 
   describe('Checking, that private posts are correctly propagated', () => {
-    const lunaContext = {};
-    const marsContext = {};
-    const zeusContext = {};
+    let lunaContext, marsContext, zeusContext;
 
-    beforeEach(funcTestHelper.createUserCtx(lunaContext, 'luna', 'pw'));
-    beforeEach(funcTestHelper.createUserCtx(marsContext, 'mars', 'pw'));
-    beforeEach(funcTestHelper.createUserCtx(zeusContext, 'zeus', 'pw'));
+    beforeEach(async () => {
+      [lunaContext, marsContext, zeusContext] = await funcTestHelper.createTestUsers([
+        'luna',
+        'mars',
+        'zeus',
+      ]);
+    });
+
     beforeEach(() => funcTestHelper.mutualSubscriptions([lunaContext, marsContext, zeusContext]));
     beforeEach(() => funcTestHelper.goPrivate(lunaContext));
 

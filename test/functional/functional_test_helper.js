@@ -22,57 +22,6 @@ const apiUrl = async (relativeUrl) => {
   return `${app.context.config.host}${relativeUrl}`;
 };
 
-export function createUser(username, password, attributes, callback) {
-  return function (done) {
-    if (typeof attributes === 'function') {
-      callback = attributes;
-      attributes = {};
-    }
-
-    if (typeof attributes === 'undefined') {
-      attributes = {};
-    }
-
-    const user = {
-      username,
-      password,
-    };
-
-    if (attributes.email) {
-      user.email = attributes.email;
-    }
-
-    apiUrl('/v1/users')
-      .then((url) => {
-        request
-          .post(url)
-          .send(user)
-          .end((err, res) => {
-            if (callback) {
-              const luna = res.body.users;
-              luna.password = user.password;
-              callback(res.body.authToken, luna);
-            }
-
-            done();
-          });
-      })
-      .catch((e) => {
-        done(e);
-      });
-  };
-}
-
-export function createUserCtx(context, username, password, attrs) {
-  return createUser(username, password, attrs, (token, user) => {
-    context.user = user;
-    context.authToken = token;
-    context.username = username.toLowerCase();
-    context.password = password;
-    context.attributes = attrs;
-  });
-}
-
 export function subscribeToCtx(context, username) {
   return function (done) {
     apiUrl(`/v1/users/${username}/subscribe`)
