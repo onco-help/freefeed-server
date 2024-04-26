@@ -233,7 +233,7 @@ describe('TimelinesAsRSS', () => {
         createUserAsync('mars', 'pw'),
       ]);
       celestials = await createGroupAsync(luna, 'celestials', 'Celestials');
-      await subscribeToAsync(mars, { username: 'celestials' });
+      await subscribeToAsync(mars, celestials);
       post1 = await createAndReturnPostToFeed(celestials, luna, 'Luna post');
       post2 = await createAndReturnPostToFeed(celestials, mars, 'Mars post');
     });

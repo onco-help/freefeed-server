@@ -311,12 +311,12 @@ describe('TimelinesControllerV2', () => {
         });
 
         describe('Luna subscribed to Selenites group and not subscribed to Celestials group', () => {
-          let selenitesPost, celestialsPost;
+          let selenitesPost, celestialsPost, celestials;
 
           beforeEach(async () => {
-            await createGroupAsync(venus, 'selenites');
-            await createGroupAsync(venus, 'celestials');
-            await subscribeToAsync(luna, { username: 'selenites' });
+            const selenites = await createGroupAsync(venus, 'selenites');
+            celestials = await createGroupAsync(venus, 'celestials');
+            await subscribeToAsync(luna, selenites);
 
             selenitesPost = await createAndReturnPostToFeed(
               { username: 'selenites' },
@@ -348,7 +348,7 @@ describe('TimelinesControllerV2', () => {
           });
 
           it('should return timeline with Mars posts from Celestials group in "friends-all-activity" mode', async () => {
-            await subscribeToAsync(mars, { username: 'celestials' });
+            await subscribeToAsync(mars, celestials);
             const marsCelestialsPost = await createAndReturnPostToFeed(
               { username: 'celestials' },
               mars,
@@ -367,9 +367,9 @@ describe('TimelinesControllerV2', () => {
         beforeEach(async () => {
           mars = await createUserAsync('mars', 'pw');
           venus = await createUserAsync('venus', 'pw');
-          await createGroupAsync(venus, 'selenites');
-          await subscribeToAsync(luna, { username: 'selenites' });
-          await subscribeToAsync(mars, { username: 'selenites' });
+          const selenites = await createGroupAsync(venus, 'selenites');
+          await subscribeToAsync(luna, selenites);
+          await subscribeToAsync(mars, selenites);
           await banUser(mars, luna);
         });
 

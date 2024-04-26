@@ -542,8 +542,15 @@ export function groupToProtected(group, userContext) {
   return updateGroupAsync(group, userContext, { isPrivate: '0', isProtected: '1' });
 }
 
-export function subscribeToAsync(subscriber, victim) {
-  return postJson(`/v1/users/${victim.username}/subscribe`, { authToken: subscriber.authToken });
+export async function subscribeToAsync(subscriber, victim) {
+  let victimObj = victim.user;
+
+  if (!victimObj) {
+    // Group or old-fashion user context
+    victimObj = await dbAdapter.getFeedOwnerById(victim.id ?? victim.group.id);
+  }
+
+  await subscriber.user.subscribeTo(victimObj);
 }
 
 export function unsubscribeFromAsync(unsubscriber, victim) {
@@ -577,7 +584,7 @@ export async function mutualSubscriptions(userContexts) {
         continue;
       }
 
-      promises.push(subscribeToAsync(ctx1, ctx2));
+      promises.push(ctx1.user.subscribeTo(ctx2.user));
     }
   }
 
