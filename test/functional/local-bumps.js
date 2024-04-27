@@ -28,7 +28,7 @@ describe('Local bumps', () => {
       marsPosts = [];
 
       for (let i = 0; i < nPosts; i++) {
-        const { id } = await helper.createAndReturnPost(mars, 'post'); // eslint-disable-line no-await-in-loop
+        const { id } = await helper.justCreatePost(mars, 'post'); // eslint-disable-line no-await-in-loop
         marsPosts.push(id);
       }
 
@@ -38,7 +38,7 @@ describe('Local bumps', () => {
       lunaPosts = [];
 
       for (let i = 0; i < nPosts; i++) {
-        const { id } = await helper.createAndReturnPost(luna, 'post'); // eslint-disable-line no-await-in-loop
+        const { id } = await helper.justCreatePost(luna, 'post'); // eslint-disable-line no-await-in-loop
         lunaPosts.push(id);
       }
 
@@ -52,7 +52,7 @@ describe('Local bumps', () => {
       marsPostsInGroup = [];
 
       for (let i = 0; i < nPosts; i++) {
-        const { id } = await helper.createAndReturnPostToFeed(celestials, mars, 'post'); // eslint-disable-line no-await-in-loop
+        const { id } = await helper.justCreatePost(mars, 'post', [celestials.username]); // eslint-disable-line no-await-in-loop
         marsPostsInGroup.push(id);
       }
 

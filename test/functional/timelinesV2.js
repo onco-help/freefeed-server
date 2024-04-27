@@ -33,6 +33,8 @@ import {
   savePost,
   createTestUsers,
   unsavePost,
+  justCreatePost,
+  justCreateComment,
 } from './functional_test_helper';
 
 describe('TimelinesControllerV2', () => {
@@ -318,16 +320,8 @@ describe('TimelinesControllerV2', () => {
             celestials = await createGroupAsync(venus, 'celestials');
             await subscribeToAsync(luna, selenites);
 
-            selenitesPost = await createAndReturnPostToFeed(
-              { username: 'selenites' },
-              venus,
-              'Post',
-            );
-            celestialsPost = await createAndReturnPostToFeed(
-              { username: 'celestials' },
-              venus,
-              'Post',
-            );
+            selenitesPost = await justCreatePost(venus, 'Post', ['selenites']);
+            celestialsPost = await justCreatePost(venus, 'Post', ['celestials']);
           });
 
           it('should return timeline without posts from Celestials group', async () => {
@@ -404,10 +398,10 @@ describe('TimelinesControllerV2', () => {
       beforeEach(async () => {
         luna = await createUserAsync('luna', 'pw');
         mars = await createUserAsync('mars', 'pw');
-        marsPostLikedByLuna = await createAndReturnPost(mars, 'Mars post 1');
-        marsPostCommentedByLuna = await createAndReturnPost(mars, 'Mars post 2');
-        lunaPost = await createAndReturnPost(luna, 'Luna post');
-        await createCommentAsync(luna, marsPostCommentedByLuna.id, 'Comment');
+        marsPostLikedByLuna = await justCreatePost(mars, 'Mars post 1');
+        marsPostCommentedByLuna = await justCreatePost(mars, 'Mars post 2');
+        lunaPost = await justCreatePost(luna, 'Luna post');
+        await justCreateComment(luna, marsPostCommentedByLuna.id, 'Comment');
         await like(marsPostLikedByLuna.id, luna.authToken);
       });
 
@@ -461,8 +455,8 @@ describe('TimelinesControllerV2', () => {
         luna = await createUserAsync('luna', 'pw');
         mars = await createUserAsync('mars', 'pw');
         await mutualSubscriptions([luna, mars]);
-        postLunaToMars = await createAndReturnPostToFeed({ username: 'mars' }, luna, 'Post');
-        postMarsToLuna = await createAndReturnPostToFeed({ username: 'luna' }, mars, 'Post');
+        postLunaToMars = await justCreatePost(luna, 'Post', ['luna', 'mars']);
+        postMarsToLuna = await justCreatePost(mars, 'Post', ['luna', 'mars']);
       });
 
       it('should return timeline with directs from Luna and to Luna', async () => {
@@ -496,10 +490,10 @@ describe('TimelinesControllerV2', () => {
         createUserAsync('venus', 'pw'),
       ]);
       await subscribeToAsync(venus, mars);
-      postCreatedByMars = await createAndReturnPost(mars, 'Post');
-      postCommentedByMars = await createAndReturnPost(venus, 'Post');
-      postLikedByMars = await createAndReturnPost(venus, 'Post');
-      await createCommentAsync(mars, postCommentedByMars.id, 'Comment');
+      postCreatedByMars = await justCreatePost(mars, 'Post');
+      postCommentedByMars = await justCreatePost(venus, 'Post');
+      postLikedByMars = await justCreatePost(venus, 'Post');
+      await justCreateComment(mars, postCommentedByMars.id, 'Comment');
       await like(postLikedByMars.id, mars.authToken);
       await hidePost(postCreatedByMars.id, luna);
     });
@@ -606,8 +600,8 @@ describe('TimelinesControllerV2', () => {
     let post1, post2;
     beforeEach(async () => {
       luna = await createUserAsync('luna', 'pw');
-      post1 = await createAndReturnPost(luna, 'Post');
-      post2 = await createAndReturnPost(luna, 'Post');
+      post1 = await justCreatePost(luna, 'Post');
+      post2 = await justCreatePost(luna, 'Post');
     });
 
     it('should return uncommented Luna posts in creation order', async () => {
@@ -631,7 +625,7 @@ describe('TimelinesControllerV2', () => {
     beforeEach(async () => {
       luna = await createUserAsync('luna', 'pw');
       // Luna creates 10 posts
-      await Promise.all([...new Array(10)].map(() => createAndReturnPost(luna, 'Post')));
+      await Promise.all([...new Array(10)].map(() => justCreatePost(luna, 'Post')));
     });
 
     it('should return first page with isLastPage = false', async () => {
@@ -655,9 +649,9 @@ describe('TimelinesControllerV2', () => {
     let post1, post2, post3;
     beforeEach(async () => {
       luna = await createUserAsync('luna', 'pw');
-      post1 = await createAndReturnPost(luna, 'Post');
-      post2 = await createAndReturnPost(luna, 'Post');
-      post3 = await createAndReturnPost(luna, 'Post');
+      post1 = await justCreatePost(luna, 'Post');
+      post2 = await justCreatePost(luna, 'Post');
+      post3 = await justCreatePost(luna, 'Post');
       await dbAdapter
         .database('posts')
         .where('uid', post1.id)
@@ -700,8 +694,8 @@ describe('TimelinesControllerV2', () => {
     let post1, post2;
     beforeEach(async () => {
       [luna, mars] = await createTestUsers(2);
-      post1 = await createAndReturnPost(luna, 'Post');
-      post2 = await createAndReturnPost(mars, 'Post');
+      post1 = await justCreatePost(luna, 'Post');
+      post2 = await justCreatePost(mars, 'Post');
     });
 
     it('should not return Saves timeline to anonymous', async () => {

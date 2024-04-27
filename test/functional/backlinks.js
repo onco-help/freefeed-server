@@ -9,12 +9,12 @@ import { PubSubAdapter } from '../../app/support/PubSubAdapter';
 
 import {
   authHeaders,
-  createAndReturnPost,
   createCommentAsync,
   createTestUsers,
   deletePostAsync,
   goPrivate,
   goPublic,
+  justCreatePost,
   performJSONRequest,
   removeCommentAsync,
   updateCommentAsync,
@@ -30,11 +30,10 @@ describe('Backlinks in API output', () => {
     await cleanDB($pg_database);
     [luna, mars] = await createTestUsers(['luna', 'mars']);
 
-    ({ id: lunaPostId, shortId: lunaPostShortId } = await createAndReturnPost(luna, 'Luna post'));
-    ({ id: marsPostId } = await createAndReturnPost(
-      mars,
-      `As Luna said, example.com/${lunaPostId}`,
-    ));
+    const lunaPost = await justCreatePost(luna, 'Luna post');
+    lunaPostId = lunaPost.id;
+    lunaPostShortId = await lunaPost.getShortId();
+    ({ id: marsPostId } = await justCreatePost(mars, `As Luna said, example.com/${lunaPostId}`));
   });
 
   it(`should return Luna post with 1 backlink`, async () => {
@@ -104,7 +103,7 @@ describe('Backlinks in API output', () => {
 
   describe('Counting backlinks in posts and comments', () => {
     before(async () => {
-      mars.post = await createAndReturnPost(mars, `As Luna said, example.com/${lunaPostId}`);
+      mars.post = await justCreatePost(mars, `As Luna said, example.com/${lunaPostId}`);
     });
     after(() => deletePostAsync(mars, mars.post.id));
 
@@ -147,7 +146,8 @@ describe('Backlinks in realtime', () => {
     await lunaSession.sendAsync('subscribe', { timeline: [lunaTimeline.id] });
 
     // Luna created post
-    luna.post = await createAndReturnPost(luna, 'Luna post');
+    luna.post = await justCreatePost(luna, 'Luna post');
+    luna.post.shortId = await luna.post.getShortId();
   });
 
   describe('Mars is public', () => {
@@ -155,10 +155,7 @@ describe('Backlinks in realtime', () => {
       const test = lunaSession.receiveWhile(
         'post:update',
         async () =>
-          (mars.post = await createAndReturnPost(
-            mars,
-            `As Luna said, example.com/${luna.post.id}`,
-          )),
+          (mars.post = await justCreatePost(mars, `As Luna said, example.com/${luna.post.id}`)),
       );
       await expect(test, 'when fulfilled', 'to satisfy', {
         posts: { id: luna.post.id, backlinksCount: 1 },
@@ -205,7 +202,7 @@ describe('Backlinks in realtime', () => {
       const test = lunaSession.receiveWhile(
         'post:update',
         async () =>
-          (mars.post = await createAndReturnPost(mars, `As Luna said, /luna/${luna.post.shortId}`)),
+          (mars.post = await justCreatePost(mars, `As Luna said, /luna/${luna.post.shortId}`)),
       );
       await expect(test, 'when fulfilled', 'to satisfy', {
         posts: { id: luna.post.id, backlinksCount: 1 },
@@ -255,10 +252,7 @@ describe('Backlinks in realtime', () => {
       const test = lunaSession.notReceiveWhile(
         'post:update',
         async () =>
-          (mars.post = await createAndReturnPost(
-            mars,
-            `As Luna said, example.com/${luna.post.id}`,
-          )),
+          (mars.post = await justCreatePost(mars, `As Luna said, example.com/${luna.post.id}`)),
       );
       await expect(test, 'to be fulfilled');
     });
@@ -293,7 +287,7 @@ describe('Backlinks in realtime', () => {
   });
 
   describe('Backlinks in comments', () => {
-    before(async () => (mars.post = await createAndReturnPost(mars, `Just a post`)));
+    before(async () => (mars.post = await justCreatePost(mars, `Just a post`)));
     after(() => deletePostAsync(mars, mars.post.id));
 
     describe('Mars is public', () => {

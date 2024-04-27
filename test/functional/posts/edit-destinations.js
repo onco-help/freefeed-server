@@ -6,11 +6,11 @@ import cleanDB from '../../dbCleaner';
 import {
   createTestUsers,
   mutualSubscriptions,
-  createAndReturnPostToFeed,
   performJSONRequest,
   authHeaders,
-  createGroupAsync,
   groupToPrivate,
+  justCreatePost,
+  justCreateGroup,
 } from '../functional_test_helper';
 import { GONE_SUSPENDED } from '../../../app/models/user';
 
@@ -29,7 +29,7 @@ describe('Update destinations of existing post', () => {
       await mutualSubscriptions([luna, mars]);
 
       // Luna sent direct message to Mars
-      post = await createAndReturnPostToFeed([mars], luna, 'Hello, Mars!');
+      post = await justCreatePost(luna, 'Hello, Mars!', [mars.username, luna.username]);
 
       // Mars decide to delete his account
       await mars.user.setGoneStatus(GONE_SUSPENDED);
@@ -72,10 +72,10 @@ describe('Update destinations of existing post', () => {
   describe('Luna wrote post to group, group became private', () => {
     let celestials;
     beforeEach(async () => {
-      celestials = await createGroupAsync(mars, 'celestials', 'Celestials');
+      celestials = await justCreateGroup(mars, 'celestials', 'Celestials');
 
-      post = await createAndReturnPostToFeed([celestials, luna], luna, 'Hello, world!');
-      await groupToPrivate(celestials.group, mars);
+      post = await justCreatePost(luna, 'Hello, world!', [celestials.username, luna.username]);
+      await groupToPrivate(celestials, mars);
     });
 
     it(`should allow Luna to update the post without 'feeds' field`, async () => {

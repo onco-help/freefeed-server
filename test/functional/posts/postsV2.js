@@ -9,7 +9,6 @@ import { PubSub } from '../../../app/models';
 import {
   createUserAsync,
   createAndReturnPost,
-  createCommentAsync,
   like,
   goPrivate,
   goProtected,
@@ -27,6 +26,8 @@ import {
   acceptRequestToSubscribe,
   banUser,
   createTestUser,
+  justCreatePost,
+  justCreateComment,
 } from '../functional_test_helper';
 import { postsByIdsResponse } from '../schemaV2-helper';
 
@@ -46,20 +47,20 @@ describe('TimelinesControllerV2', () => {
       let luna, mars, venus;
       let lunaPost;
       beforeEach(async () => {
-        [luna, mars, venus] = await Promise.all([
-          createUserAsync('luna', 'pw'),
-          createUserAsync('mars', 'pw'),
-          createUserAsync('venus', 'pw'),
-        ]);
-        lunaPost = await createAndReturnPost(luna, 'Luna post');
+        [luna, mars, venus] = await createTestUsers(['luna', 'mars', 'venus']);
+        lunaPost = await justCreatePost(luna, 'Luna post');
         await mutualSubscriptions([luna, mars]);
       });
 
       describe('Comments folding test', () => {
         const expectFolding = async (nComments, expComments, expOmitted, allComments = false) => {
+          const promises = [];
+
           for (let n = 0; n < nComments; n++) {
-            await createCommentAsync(luna, lunaPost.id, `Comment ${n + 1}`); // eslint-disable-line no-await-in-loop
+            promises.push(justCreateComment(luna, lunaPost.id, `Comment ${n + 1}`));
           }
+
+          await Promise.all(promises);
 
           const post = await fetchPost(lunaPost.id, null, { allComments });
           expect(post.posts.comments, 'to have length', expComments);
@@ -217,8 +218,10 @@ describe('TimelinesControllerV2', () => {
         let lunaPostWithSpecialCharacters, lunaPostWithNewLines;
 
         beforeEach(async () => {
-          lunaPostWithSpecialCharacters = await createAndReturnPost(luna, 'Test with tags <br>');
-          lunaPostWithNewLines = await createAndReturnPost(luna, 'A\nB\nC');
+          [lunaPostWithSpecialCharacters, lunaPostWithNewLines] = await Promise.all([
+            justCreatePost(luna, 'Test with tags <br>'),
+            justCreatePost(luna, 'A\nB\nC'),
+          ]);
         });
 
         describe('Luna is a public user', () => {
@@ -230,7 +233,8 @@ describe('TimelinesControllerV2', () => {
           });
 
           it('should return information for a public post by its short id', async () => {
-            const response = await fetchPostOpenGraph(lunaPost.shortId);
+            const shortId = await lunaPost.getShortId();
+            const response = await fetchPostOpenGraph(shortId);
             response.should.include('og:title');
             response.should.include('luna');
             response.should.include('<meta property="og:description" content="Luna post" />');
@@ -273,7 +277,7 @@ describe('TimelinesControllerV2', () => {
       let attId1, attId2, attId3;
       beforeEach(async () => {
         luna = await createUserAsync('luna', 'pw');
-        luna.post = await createAndReturnPost(luna, 'Luna post');
+        luna.post = await justCreatePost(luna, 'Luna post');
         attId1 = (await createMockAttachmentAsync(luna)).id;
         attId2 = (await createMockAttachmentAsync(luna)).id;
         attId3 = (await createMockAttachmentAsync(luna)).id;
@@ -340,7 +344,7 @@ describe('TimelinesControllerV2', () => {
         let post1, post2;
         beforeEach(async () => {
           post1 = luna.post;
-          post2 = await createAndReturnPost(luna, 'Luna post 2');
+          post2 = await justCreatePost(luna, 'Luna post 2');
         });
 
         it('should not allow to rebind attachment from post1 to post2', async () => {
@@ -356,7 +360,7 @@ describe('TimelinesControllerV2', () => {
         let mars;
         beforeEach(async () => {
           mars = await createUserAsync('mars', 'pw');
-          mars.post = await createAndReturnPost(mars, 'Mars post');
+          mars.post = await justCreatePost(mars, 'Mars post');
         });
 
         it('should not allow Mars to steal Luna attachments', async () => {
@@ -374,7 +378,7 @@ describe('TimelinesControllerV2', () => {
       let luna;
       beforeEach(async () => {
         luna = await createUserAsync('luna', 'pw');
-        luna.post = await createAndReturnPost(luna, 'Luna post');
+        luna.post = await justCreatePost(luna, 'Luna post');
         await hidePost(luna.post.id, luna);
       });
 
@@ -388,7 +392,7 @@ describe('TimelinesControllerV2', () => {
       let luna;
       beforeEach(async () => {
         luna = await createUserAsync('luna', 'pw');
-        luna.post = await createAndReturnPost(luna, 'Luna post');
+        luna.post = await justCreatePost(luna, 'Luna post');
         await savePost(luna.post.id, luna);
       });
 
@@ -419,7 +423,7 @@ describe('TimelinesControllerV2', () => {
 
       for (let n = 0; n < nPosts; n++) {
         // eslint-disable-next-line no-await-in-loop
-        posts.push(await createAndReturnPost(n % 2 == 0 ? luna : mars, 'post'));
+        posts.push(await justCreatePost(n % 2 == 0 ? luna : mars, 'post'));
       }
     });
 

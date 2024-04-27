@@ -13,10 +13,7 @@ import {
   acceptRequestToJoinGroup,
   banUser,
   createAndReturnPost,
-  createAndReturnPostToFeed,
-  createCommentAsync,
   likeComment,
-  createGroupAsync,
   createUserAsync,
   unlikeComment,
   getCommentLikes,
@@ -25,6 +22,12 @@ import {
   sendRequestToJoinGroup,
   performSearch,
   updateUserAsync,
+  createTestUsers,
+  justCreatePost,
+  createTestUser,
+  justCreateComment,
+  justCreateGroup,
+  justLikeComment,
 } from './functional_test_helper';
 import * as schema from './schemaV2-helper';
 
@@ -32,11 +35,10 @@ const expect = unexpected.clone().use(schema.freefeedAssertions);
 
 describe('Comment likes', () => {
   let app;
-  let writeComment, getPost, getFeed;
+  let getPost, getFeed;
 
   before(async () => {
     app = await getSingleton();
-    writeComment = createComment();
     getPost = fetchPost(app);
     getFeed = fetchTimeline(app);
     PubSub.setPublisher(new DummyPublisher());
@@ -57,14 +59,10 @@ describe('Comment likes', () => {
           let lunaPost, marsPost;
 
           beforeEach(async () => {
-            [luna, mars, jupiter] = await Promise.all([
-              createUserAsync('luna', 'pw'),
-              createUserAsync('mars', 'pw'),
-              createUserAsync('jupiter', 'pw'),
-            ]);
+            [luna, mars, jupiter] = await createTestUsers(['luna', 'mars', 'jupiter']);
             [lunaPost, marsPost] = await Promise.all([
-              createAndReturnPost(luna, 'Luna post'),
-              createAndReturnPost(mars, 'Mars post'),
+              justCreatePost(luna, 'Luna post'),
+              justCreatePost(mars, 'Mars post'),
             ]);
             await mutualSubscriptions([luna, mars]);
           });
@@ -75,37 +73,37 @@ describe('Comment likes', () => {
           });
 
           it('should not allow to like own comments to own post', async () => {
-            const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+            const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
             const res = await likeComment(lunaComment.id, luna);
             expect(res, 'to be an API error', 403, "You can't like your own comment");
           });
 
           it('should not allow to like own comments to other user post', async () => {
-            const lunaComment = await writeComment(luna, marsPost.id, 'Luna comment');
+            const lunaComment = await justCreateComment(luna, marsPost.id, 'Luna comment');
             const res = await likeComment(lunaComment.id, luna);
             expect(res, 'to be an API error', 403, "You can't like your own comment");
           });
 
           it("should allow Luna to like Mars' comment to Luna's post", async () => {
-            const marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, lunaPost.id, 'Mars comment');
             const res = await likeComment(marsComment.id, luna);
             expect(res, 'to have 1 like by', luna);
           });
 
           it("should allow Luna to like Mars' comment to Mars' post", async () => {
-            const marsComment = await writeComment(mars, marsPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, marsPost.id, 'Mars comment');
             const res = await likeComment(marsComment.id, luna);
             expect(res, 'to have 1 like by', luna);
           });
 
           it("should allow Jupiter to like Mars' comment to Luna's post", async () => {
-            const marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, lunaPost.id, 'Mars comment');
             const res = await likeComment(marsComment.id, jupiter);
             expect(res, 'to have 1 like by', jupiter);
           });
 
           it('should not allow to like comment more than one time', async () => {
-            const marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, lunaPost.id, 'Mars comment');
             const res1 = await likeComment(marsComment.id, luna);
             expect(res1.status, 'to be', 200);
 
@@ -122,11 +120,11 @@ describe('Comment likes', () => {
             let pluto;
 
             beforeEach(async () => {
-              pluto = await createUserAsync('pluto', 'pw');
+              pluto = await createTestUser('pluto');
             });
 
             it('should sort comment likes chronologically descending (except viewer)', async () => {
-              const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+              const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
               let res = await likeComment(lunaComment.id, mars);
               expect(res, 'to have 1 like by', mars);
               await likeComment(lunaComment.id, jupiter);
@@ -151,50 +149,58 @@ describe('Comment likes', () => {
             let plutoPost;
 
             beforeEach(async () => {
-              pluto = await createUserAsync('pluto', 'pw');
-              plutoPost = await createAndReturnPost(pluto, 'Pluto post');
+              pluto = await createTestUser('pluto');
+              plutoPost = await justCreatePost(pluto, 'Pluto post');
               await Promise.all([banUser(luna, mars), banUser(luna, pluto)]);
             });
 
             it("should not allow Luna to like Mars' comment to Mars' post", async () => {
-              const marsComment = await writeComment(mars, marsPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, marsPost.id, 'Mars comment');
               const res = await likeComment(marsComment.id, luna);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Luna to like Pluto's comment to Pluto's post", async () => {
-              const plutoComment = await writeComment(pluto, plutoPost.id, 'Pluto comment');
+              const plutoComment = await justCreateComment(pluto, plutoPost.id, 'Pluto comment');
               const res = await likeComment(plutoComment.id, luna);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Luna to like Pluto's comment to Mars' post", async () => {
-              const plutoComment = await writeComment(pluto, marsPost.id, 'Pluto comment');
+              const plutoComment = await justCreateComment(pluto, marsPost.id, 'Pluto comment');
               const res = await likeComment(plutoComment.id, luna);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Mars to like Luna's comment to Luna's post", async () => {
-              const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+              const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
               const res = await likeComment(lunaComment.id, mars);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Pluto to like Luna's comment to Luna's post", async () => {
-              const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+              const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
               const res = await likeComment(lunaComment.id, pluto);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Pluto to like Jupiter's comment to Luna's post", async () => {
-              const jupiterComment = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
+              const jupiterComment = await justCreateComment(
+                jupiter,
+                lunaPost.id,
+                'Jupiter comment',
+              );
               const res = await likeComment(jupiterComment.id, pluto);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it('should not display Luna comment likes of Pluto and Mars', async () => {
-              const jupiterPost = await createAndReturnPost(jupiter, 'Jupiter post');
-              const jupiterComment = await writeComment(jupiter, jupiterPost.id, 'Jupiter comment');
+              const jupiterPost = await justCreatePost(jupiter, 'Jupiter post');
+              const jupiterComment = await justCreateComment(
+                jupiter,
+                jupiterPost.id,
+                'Jupiter comment',
+              );
               let res = await likeComment(jupiterComment.id, pluto);
               expect(res, 'to have 1 like by', pluto);
               await likeComment(jupiterComment.id, mars);
@@ -208,56 +214,60 @@ describe('Comment likes', () => {
             let dubhePost, merakPost, phadPost, alkaidPost;
             beforeEach(async () => {
               [dubhe, merak, phad, alkaid] = await Promise.all([
-                createGroupAsync(luna, 'dubhe', 'Dubhe', false, false),
-                createGroupAsync(luna, 'merak', 'Merak', false, true),
-                createGroupAsync(luna, 'phad', 'Phad', true, false),
-                createGroupAsync(luna, 'alkaid', 'Alkaid', true, true),
+                justCreateGroup(luna, 'dubhe', 'Dubhe'),
+                justCreateGroup(luna, 'merak', 'Merak', { isRestricted: true }),
+                justCreateGroup(luna, 'phad', 'Phad', { isPrivate: true }),
+                justCreateGroup(luna, 'alkaid', 'Alkaid', { isPrivate: true, isRestricted: true }),
               ]);
 
               [dubhePost, merakPost, phadPost, alkaidPost] = await Promise.all([
-                createAndReturnPostToFeed(dubhe, luna, 'Dubhe post'),
-                createAndReturnPostToFeed(merak, luna, 'Merak post'),
-                createAndReturnPostToFeed(phad, luna, 'Phad post'),
-                createAndReturnPostToFeed(alkaid, luna, 'Alkaid post'),
+                justCreatePost(luna, 'Dubhe post', [dubhe.username]),
+                justCreatePost(luna, 'Merak post', [merak.username]),
+                justCreatePost(luna, 'Phad post', [phad.username]),
+                justCreatePost(luna, 'Alkaid post', [alkaid.username]),
               ]);
-              await sendRequestToJoinGroup(mars, phad);
-              await acceptRequestToJoinGroup(luna, mars, phad);
-              await sendRequestToJoinGroup(mars, alkaid);
-              await acceptRequestToJoinGroup(luna, mars, alkaid);
+              await Promise.all([
+                sendRequestToJoinGroup(mars, phad),
+                sendRequestToJoinGroup(mars, alkaid),
+              ]);
+              await Promise.all([
+                acceptRequestToJoinGroup(luna, mars, phad),
+                acceptRequestToJoinGroup(luna, mars, alkaid),
+              ]);
             });
 
             it('should allow any user to like comment in a public group', async () => {
-              const marsComment = await writeComment(mars, dubhePost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, dubhePost.id, 'Mars comment');
               const res = await likeComment(marsComment.id, jupiter);
               expect(res, 'to have 1 like by', jupiter);
             });
 
             it('should allow any user to like comment in a public restricted group', async () => {
-              const marsComment = await writeComment(mars, merakPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, merakPost.id, 'Mars comment');
               const res = await likeComment(marsComment.id, jupiter);
               expect(res, 'to have 1 like by', jupiter);
             });
 
             it('should allow members to like comment in a private group', async () => {
-              const marsComment = await writeComment(mars, phadPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, phadPost.id, 'Mars comment');
               const res = await likeComment(marsComment.id, luna);
               expect(res, 'to have 1 like by', luna);
             });
 
             it('should not allow non-members to like comment in a private group', async () => {
-              const marsComment = await writeComment(mars, phadPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, phadPost.id, 'Mars comment');
               const res = await likeComment(marsComment.id, jupiter);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it('should allow members to like comment in a private restricted group', async () => {
-              const marsComment = await writeComment(mars, alkaidPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, alkaidPost.id, 'Mars comment');
               const res = await likeComment(marsComment.id, luna);
               expect(res, 'to have 1 like by', luna);
             });
 
             it('should not allow non-members to like comment in a private restricted group', async () => {
-              const marsComment = await writeComment(mars, alkaidPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, alkaidPost.id, 'Mars comment');
               const res = await likeComment(marsComment.id, jupiter);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
@@ -278,14 +288,10 @@ describe('Comment likes', () => {
           let lunaPost, marsPost;
 
           beforeEach(async () => {
-            [luna, mars, jupiter] = await Promise.all([
-              createUserAsync('luna', 'pw'),
-              createUserAsync('mars', 'pw'),
-              createUserAsync('jupiter', 'pw'),
-            ]);
+            [luna, mars, jupiter] = await createTestUsers(['luna', 'mars', 'jupiter']);
             [lunaPost, marsPost] = await Promise.all([
-              createAndReturnPost(luna, 'Luna post'),
-              createAndReturnPost(mars, 'Mars post'),
+              justCreatePost(luna, 'Luna post'),
+              justCreatePost(mars, 'Mars post'),
             ]);
             await mutualSubscriptions([luna, mars]);
           });
@@ -296,40 +302,40 @@ describe('Comment likes', () => {
           });
 
           it('should not allow to unlike own comments to own post', async () => {
-            const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+            const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
             const res = await unlikeComment(lunaComment.id, luna);
             expect(res, 'to be an API error', 403, "You can't un-like your own comment");
           });
 
           it('should not allow to unlike own comments to other user post', async () => {
-            const lunaComment = await writeComment(luna, marsPost.id, 'Luna comment');
+            const lunaComment = await justCreateComment(luna, marsPost.id, 'Luna comment');
             const res = await unlikeComment(lunaComment.id, luna);
             expect(res, 'to be an API error', 403, "You can't un-like your own comment");
           });
 
           it("should allow Luna to unlike Mars' comment to Luna's post", async () => {
-            const marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, lunaPost.id, 'Mars comment');
             await likeComment(marsComment.id, luna);
             const res = await unlikeComment(marsComment.id, luna);
             expect(res, 'to have no likes');
           });
 
           it("should allow Luna to unlike Mars' comment to Mars' post", async () => {
-            const marsComment = await writeComment(mars, marsPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, marsPost.id, 'Mars comment');
             await likeComment(marsComment.id, luna);
             const res = await unlikeComment(marsComment.id, luna);
             expect(res, 'to have no likes');
           });
 
           it("should allow Jupiter to unlike Mars' comment to Luna's post", async () => {
-            const marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, lunaPost.id, 'Mars comment');
             await likeComment(marsComment.id, jupiter);
             const res = await unlikeComment(marsComment.id, jupiter);
             expect(res, 'to have no likes');
           });
 
           it("should not allow to unlike comment that haven't been liked", async () => {
-            const marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, lunaPost.id, 'Mars comment');
             const res = await unlikeComment(marsComment.id, luna);
             expect(
               res,
@@ -340,7 +346,7 @@ describe('Comment likes', () => {
           });
 
           it('should not allow to unlike comment more than one time', async () => {
-            const marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
+            const marsComment = await justCreateComment(mars, lunaPost.id, 'Mars comment');
             await likeComment(marsComment.id, luna);
             const res1 = await unlikeComment(marsComment.id, luna);
             expect(res1, 'to have no likes');
@@ -358,11 +364,11 @@ describe('Comment likes', () => {
             let pluto;
 
             beforeEach(async () => {
-              pluto = await createUserAsync('pluto', 'pw');
+              pluto = await createTestUser('pluto');
             });
 
             it('should sort comment likes chronologically descending', async () => {
-              const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+              const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
               await likeComment(lunaComment.id, mars);
               await likeComment(lunaComment.id, jupiter);
               await likeComment(lunaComment.id, pluto);
@@ -386,53 +392,61 @@ describe('Comment likes', () => {
             let plutoPost;
 
             beforeEach(async () => {
-              pluto = await createUserAsync('pluto', 'pw');
-              plutoPost = await createAndReturnPost(pluto, 'Pluto post');
+              pluto = await createTestUser('pluto');
+              plutoPost = await justCreatePost(pluto, 'Pluto post');
               await Promise.all([banUser(luna, mars), banUser(luna, pluto)]);
             });
 
             it("should not allow Luna to unlike Mars' comment to Mars' post", async () => {
-              const marsComment = await writeComment(mars, marsPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, marsPost.id, 'Mars comment');
               const res = await unlikeComment(marsComment.id, luna);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Luna to unlike Pluto's comment to Pluto's post", async () => {
-              const plutoComment = await writeComment(pluto, plutoPost.id, 'Pluto comment');
+              const plutoComment = await justCreateComment(pluto, plutoPost.id, 'Pluto comment');
               const res = await unlikeComment(plutoComment.id, luna);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Luna to unlike Pluto's comment to Mars' post", async () => {
-              const plutoComment = await writeComment(pluto, marsPost.id, 'Pluto comment');
+              const plutoComment = await justCreateComment(pluto, marsPost.id, 'Pluto comment');
               const res = await unlikeComment(plutoComment.id, luna);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Mars to unlike Luna's comment to Luna's post", async () => {
-              const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+              const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
               await likeComment(lunaComment.id, mars);
               const res = await unlikeComment(lunaComment.id, mars);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Pluto to unlike Luna's comment to Luna's post", async () => {
-              const lunaComment = await writeComment(luna, lunaPost.id, 'Luna comment');
+              const lunaComment = await justCreateComment(luna, lunaPost.id, 'Luna comment');
               await likeComment(lunaComment.id, pluto);
               const res = await unlikeComment(lunaComment.id, pluto);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it("should not allow Pluto to unlike Jupiter's comment to Luna's post", async () => {
-              const jupiterComment = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
+              const jupiterComment = await justCreateComment(
+                jupiter,
+                lunaPost.id,
+                'Jupiter comment',
+              );
               await likeComment(jupiterComment.id, pluto);
               const res = await unlikeComment(jupiterComment.id, pluto);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it('should not display Luna comment likes of Pluto and Mars', async () => {
-              const jupiterPost = await createAndReturnPost(jupiter, 'Jupiter post');
-              const jupiterComment = await writeComment(jupiter, jupiterPost.id, 'Jupiter comment');
+              const jupiterPost = await justCreatePost(jupiter, 'Jupiter post');
+              const jupiterComment = await justCreateComment(
+                jupiter,
+                jupiterPost.id,
+                'Jupiter comment',
+              );
               await likeComment(jupiterComment.id, pluto);
               await likeComment(jupiterComment.id, mars);
               await likeComment(jupiterComment.id, luna);
@@ -442,8 +456,8 @@ describe('Comment likes', () => {
 
             describe('when Luna bans Jupiter after liking his comment', () => {
               it("should not allow Luna to unlike Jupiter's comment to Jupiter's post", async () => {
-                const jupiterPost = await createAndReturnPost(jupiter, 'Jupiter post');
-                const jupiterComment = await writeComment(
+                const jupiterPost = await justCreatePost(jupiter, 'Jupiter post');
+                const jupiterComment = await justCreateComment(
                   jupiter,
                   jupiterPost.id,
                   'Jupiter comment',
@@ -463,60 +477,65 @@ describe('Comment likes', () => {
             let dubhePost, merakPost, phadPost, alkaidPost;
             beforeEach(async () => {
               [dubhe, merak, phad, alkaid] = await Promise.all([
-                createGroupAsync(luna, 'dubhe', 'Dubhe', false, false),
-                createGroupAsync(luna, 'merak', 'Merak', false, true),
-                createGroupAsync(luna, 'phad', 'Phad', true, false),
-                createGroupAsync(luna, 'alkaid', 'Alkaid', true, true),
+                justCreateGroup(luna, 'dubhe', 'Dubhe'),
+                justCreateGroup(luna, 'merak', 'Merak', { isRestricted: true }),
+                justCreateGroup(luna, 'phad', 'Phad', { isPrivate: true }),
+                justCreateGroup(luna, 'alkaid', 'Alkaid', { isPrivate: true, isRestricted: true }),
               ]);
 
               [dubhePost, merakPost, phadPost, alkaidPost] = await Promise.all([
-                createAndReturnPostToFeed(dubhe, luna, 'Dubhe post'),
-                createAndReturnPostToFeed(merak, luna, 'Merak post'),
-                createAndReturnPostToFeed(phad, luna, 'Phad post'),
-                createAndReturnPostToFeed(alkaid, luna, 'Alkaid post'),
+                justCreatePost(luna, 'Dubhe post', [dubhe.username]),
+                justCreatePost(luna, 'Merak post', [merak.username]),
+                justCreatePost(luna, 'Phad post', [phad.username]),
+                justCreatePost(luna, 'Alkaid post', [alkaid.username]),
               ]);
-              await sendRequestToJoinGroup(mars, phad);
-              await acceptRequestToJoinGroup(luna, mars, phad);
-              await sendRequestToJoinGroup(mars, alkaid);
-              await acceptRequestToJoinGroup(luna, mars, alkaid);
+
+              await Promise.all([
+                sendRequestToJoinGroup(mars, phad),
+                sendRequestToJoinGroup(mars, alkaid),
+              ]);
+              await Promise.all([
+                acceptRequestToJoinGroup(luna, mars, phad),
+                acceptRequestToJoinGroup(luna, mars, alkaid),
+              ]);
             });
 
             it('should allow any user to unlike comment in a public group', async () => {
-              const marsComment = await writeComment(mars, dubhePost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, dubhePost.id, 'Mars comment');
               await likeComment(marsComment.id, jupiter);
               const res = await unlikeComment(marsComment.id, jupiter);
               expect(res, 'to have no likes');
             });
 
             it('should allow any user to unlike comment in a public restricted group', async () => {
-              const marsComment = await writeComment(mars, merakPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, merakPost.id, 'Mars comment');
               await likeComment(marsComment.id, jupiter);
               const res = await unlikeComment(marsComment.id, jupiter);
               expect(res, 'to have no likes');
             });
 
             it('should allow members to unlike comment in a private group', async () => {
-              const marsComment = await writeComment(mars, phadPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, phadPost.id, 'Mars comment');
               await likeComment(marsComment.id, luna);
               const res = await unlikeComment(marsComment.id, luna);
               expect(res, 'to have no likes');
             });
 
             it('should not allow non-members to unlike comment in a private group', async () => {
-              const marsComment = await writeComment(mars, phadPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, phadPost.id, 'Mars comment');
               const res = await unlikeComment(marsComment.id, jupiter);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
 
             it('should allow members to unlike comment in a private restricted group', async () => {
-              const marsComment = await writeComment(mars, alkaidPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, alkaidPost.id, 'Mars comment');
               await likeComment(marsComment.id, luna);
               const res = await unlikeComment(marsComment.id, luna);
               expect(res, 'to have no likes');
             });
 
             it('should not allow non-members to unlike comment in a private restricted group', async () => {
-              const marsComment = await writeComment(mars, alkaidPost.id, 'Mars comment');
+              const marsComment = await justCreateComment(mars, alkaidPost.id, 'Mars comment');
               const res = await unlikeComment(marsComment.id, jupiter);
               expect(res, 'to be an API error', 403, 'You can not see this post');
             });
@@ -531,19 +550,17 @@ describe('Comment likes', () => {
       let marsComment, lunaComment;
 
       beforeEach(async () => {
-        [luna, mars, jupiter] = await Promise.all([
-          createUserAsync('luna', 'pw'),
-          createUserAsync('mars', 'pw'),
-          createUserAsync('jupiter', 'pw'),
-        ]);
+        [luna, mars, jupiter] = await createTestUsers(['luna', 'mars', 'jupiter']);
         [lunaPost, marsPost] = await Promise.all([
-          createAndReturnPost(luna, 'Luna post'),
-          createAndReturnPost(mars, 'Mars post'),
+          justCreatePost(luna, 'Luna post'),
+          justCreatePost(mars, 'Mars post'),
         ]);
         await mutualSubscriptions([luna, mars]);
-        marsComment = await writeComment(mars, lunaPost.id, 'Mars comment');
-        lunaComment = await writeComment(luna, marsPost.id, 'Luna comment');
-        await likeComment(marsComment.id, luna);
+        [marsComment, lunaComment] = await Promise.all([
+          justCreateComment(mars, lunaPost.id, 'Mars comment'),
+          justCreateComment(luna, marsPost.id, 'Luna comment'),
+        ]);
+        await justLikeComment(marsComment, luna);
       });
 
       it('should not allow to show likes of nonexisting comment', async () => {
@@ -615,9 +632,9 @@ describe('Comment likes', () => {
         let pluto;
 
         beforeEach(async () => {
-          pluto = await createUserAsync('pluto', 'pw');
-          await likeComment(marsComment.id, jupiter);
-          await likeComment(marsComment.id, pluto);
+          pluto = await createTestUser('pluto');
+          await justLikeComment(marsComment, jupiter);
+          await justLikeComment(marsComment, pluto);
         });
 
         it('should sort comment likes chronologically descending (except viewer)', async () => {
@@ -670,12 +687,12 @@ describe('Comment likes', () => {
         let pluto, plutoPost, plutoComment, jupiterComment;
 
         beforeEach(async () => {
-          pluto = await createUserAsync('pluto', 'pw');
-          plutoPost = await createAndReturnPost(pluto, 'Pluto post');
-          plutoComment = await writeComment(pluto, plutoPost.id, 'Pluto comment');
-          jupiterComment = await writeComment(jupiter, plutoPost.id, 'Jupiter comment');
-          await likeComment(plutoComment.id, jupiter);
-          await likeComment(jupiterComment.id, pluto);
+          pluto = await createTestUser('pluto');
+          plutoPost = await justCreatePost(pluto, 'Pluto post');
+          plutoComment = await justCreateComment(pluto, plutoPost.id, 'Pluto comment');
+          jupiterComment = await justCreateComment(jupiter, plutoPost.id, 'Jupiter comment');
+          await justLikeComment(plutoComment, jupiter);
+          await justLikeComment(jupiterComment, pluto);
           await Promise.all([banUser(luna, mars), banUser(luna, pluto)]);
         });
 
@@ -710,8 +727,12 @@ describe('Comment likes', () => {
         });
 
         it('should not display Luna comment likes of Pluto and Mars', async () => {
-          const jupiterPost = await createAndReturnPost(jupiter, 'Jupiter post');
-          const jupiterComment2 = await writeComment(jupiter, jupiterPost.id, 'Jupiter comment');
+          const jupiterPost = await justCreatePost(jupiter, 'Jupiter post');
+          const jupiterComment2 = await justCreateComment(
+            jupiter,
+            jupiterPost.id,
+            'Jupiter comment',
+          );
 
           await likeComment(jupiterComment2.id, pluto);
           await likeComment(jupiterComment2.id, mars);
@@ -766,13 +787,8 @@ describe('Comment likes', () => {
       };
 
       beforeEach(async () => {
-        [luna, mars, jupiter, pluto] = await Promise.all([
-          createUserAsync('luna', 'pw'),
-          createUserAsync('mars', 'pw'),
-          createUserAsync('jupiter', 'pw'),
-          createUserAsync('pluto', 'pw'),
-        ]);
-        lunaPost = await createAndReturnPost(luna, 'Luna post');
+        [luna, mars, jupiter, pluto] = await createTestUsers(['luna', 'mars', 'jupiter', 'pluto']);
+        lunaPost = await justCreatePost(luna, 'Luna post');
         await mutualSubscriptions([luna, mars]);
       });
 
@@ -796,10 +812,10 @@ describe('Comment likes', () => {
       describe('should contain actual comment likes count for post with', () => {
         describe('1 comment', () => {
           beforeEach(async () => {
-            const comment = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-            await likeComment(comment.id, pluto);
-            await likeComment(comment.id, mars);
-            await likeComment(comment.id, luna);
+            const comment = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+            await justLikeComment(comment, pluto);
+            await justLikeComment(comment, mars);
+            await justLikeComment(comment, luna);
           });
 
           it('for anonymous user', async () =>
@@ -812,13 +828,13 @@ describe('Comment likes', () => {
 
         describe('2 comments', () => {
           beforeEach(async () => {
-            const comment1 = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-            const comment2 = await writeComment(luna, lunaPost.id, 'Luna comment');
-            await likeComment(comment1.id, pluto);
-            await likeComment(comment1.id, mars);
-            await likeComment(comment1.id, luna);
-            await likeComment(comment2.id, pluto);
-            await likeComment(comment2.id, mars);
+            const comment1 = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+            const comment2 = await justCreateComment(luna, lunaPost.id, 'Luna comment');
+            await justLikeComment(comment1, pluto);
+            await justLikeComment(comment1, mars);
+            await justLikeComment(comment1, luna);
+            await justLikeComment(comment2, pluto);
+            await justLikeComment(comment2, mars);
           });
 
           it('for anonymous user', async () =>
@@ -833,14 +849,14 @@ describe('Comment likes', () => {
 
         describe('3 comments', () => {
           beforeEach(async () => {
-            const comment1 = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-            await writeComment(luna, lunaPost.id, 'Luna comment');
-            const comment3 = await writeComment(mars, lunaPost.id, 'Mars comment');
-            await likeComment(comment1.id, pluto);
-            await likeComment(comment1.id, mars);
-            await likeComment(comment1.id, luna);
-            await likeComment(comment3.id, pluto);
-            await likeComment(comment3.id, luna);
+            const comment1 = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+            await justCreateComment(luna, lunaPost.id, 'Luna comment');
+            const comment3 = await justCreateComment(mars, lunaPost.id, 'Mars comment');
+            await justLikeComment(comment1, pluto);
+            await justLikeComment(comment1, mars);
+            await justLikeComment(comment1, luna);
+            await justLikeComment(comment3, pluto);
+            await justLikeComment(comment3, luna);
           });
 
           it('for anonymous user', async () =>
@@ -857,14 +873,14 @@ describe('Comment likes', () => {
 
         describe('4 comments', () => {
           beforeEach(async () => {
-            const comment1 = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-            const comment2 = await writeComment(luna, lunaPost.id, 'Luna comment');
-            const comment3 = await writeComment(mars, lunaPost.id, 'Mars comment');
-            const comment4 = await writeComment(mars, lunaPost.id, 'Mars comment');
-            await likeComment(comment1.id, pluto);
-            await likeComment(comment2.id, mars);
-            await likeComment(comment3.id, jupiter);
-            await likeComment(comment4.id, luna);
+            const comment1 = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+            const comment2 = await justCreateComment(luna, lunaPost.id, 'Luna comment');
+            const comment3 = await justCreateComment(mars, lunaPost.id, 'Mars comment');
+            const comment4 = await justCreateComment(mars, lunaPost.id, 'Mars comment');
+            await justLikeComment(comment1, pluto);
+            await justLikeComment(comment2, mars);
+            await justLikeComment(comment3, jupiter);
+            await justLikeComment(comment4, luna);
           });
 
           describe('with comment folding', () => {
@@ -896,15 +912,15 @@ describe('Comment likes', () => {
 
         describe('5 comments', () => {
           beforeEach(async () => {
-            const comment1 = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-            const comment2 = await writeComment(luna, lunaPost.id, 'Luna comment');
-            const comment3 = await writeComment(mars, lunaPost.id, 'Mars comment');
-            await writeComment(mars, lunaPost.id, 'Mars comment');
-            const comment5 = await writeComment(pluto, lunaPost.id, 'Pluto comment');
-            await likeComment(comment1.id, pluto);
-            await likeComment(comment2.id, mars);
-            await likeComment(comment3.id, jupiter);
-            await likeComment(comment5.id, luna);
+            const comment1 = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+            const comment2 = await justCreateComment(luna, lunaPost.id, 'Luna comment');
+            const comment3 = await justCreateComment(mars, lunaPost.id, 'Mars comment');
+            await justCreateComment(mars, lunaPost.id, 'Mars comment');
+            const comment5 = await justCreateComment(pluto, lunaPost.id, 'Pluto comment');
+            await justLikeComment(comment1, pluto);
+            await justLikeComment(comment2, mars);
+            await justLikeComment(comment3, jupiter);
+            await justLikeComment(comment5, luna);
           });
 
           describe('with comment folding', () => {
@@ -937,15 +953,15 @@ describe('Comment likes', () => {
 
       describe("should exclude banned user's comment likes", () => {
         beforeEach(async () => {
-          const comment1 = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-          const comment2 = await writeComment(luna, lunaPost.id, 'Luna comment');
-          const comment3 = await writeComment(mars, lunaPost.id, 'Mars comment');
-          await writeComment(mars, lunaPost.id, 'Mars comment');
-          const comment5 = await writeComment(pluto, lunaPost.id, 'Pluto comment');
-          await likeComment(comment1.id, pluto);
-          await likeComment(comment2.id, mars);
-          await likeComment(comment3.id, jupiter);
-          await likeComment(comment5.id, luna);
+          const comment1 = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+          const comment2 = await justCreateComment(luna, lunaPost.id, 'Luna comment');
+          const comment3 = await justCreateComment(mars, lunaPost.id, 'Mars comment');
+          await justCreateComment(mars, lunaPost.id, 'Mars comment');
+          const comment5 = await justCreateComment(pluto, lunaPost.id, 'Pluto comment');
+          await justLikeComment(comment1, pluto);
+          await justLikeComment(comment2, mars);
+          await justLikeComment(comment3, jupiter);
+          await justLikeComment(comment5, luna);
 
           await Promise.all([banUser(luna, jupiter), banUser(luna, pluto)]);
         });
@@ -971,10 +987,10 @@ describe('Comment likes', () => {
 
       describe('should be present in comment payload', () => {
         beforeEach(async () => {
-          const comment = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-          await likeComment(comment.id, pluto);
-          await likeComment(comment.id, mars);
-          await likeComment(comment.id, luna);
+          const comment = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+          await justLikeComment(comment, pluto);
+          await justLikeComment(comment, mars);
+          await justLikeComment(comment, luna);
         });
 
         it('for anonymous user', async () => {
@@ -1097,18 +1113,13 @@ describe('Comment likes', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars, jupiter, pluto] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-        createUserAsync('jupiter', 'pw'),
-        createUserAsync('pluto', 'pw'),
-      ]);
-      lunaPost = await createAndReturnPost(luna, 'Luna post');
+      [luna, mars, jupiter, pluto] = await createTestUsers(['luna', 'mars', 'jupiter', 'pluto']);
+      lunaPost = await justCreatePost(luna, 'Luna post');
       await mutualSubscriptions([luna, mars]);
 
-      comment = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-      await likeComment(comment.id, pluto);
-      await likeComment(comment.id, mars);
+      comment = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+      await justLikeComment(comment, pluto);
+      await justLikeComment(comment, mars);
     });
 
     describe('comment likes fields should be present', () => {
@@ -1131,7 +1142,7 @@ describe('Comment likes', () => {
           { username: 'mars', authToken: luna.authToken },
           'Luna direct',
         );
-        const directComment = await writeComment(
+        const directComment = await justCreateComment(
           mars,
           luna2marsDirectPost.id,
           'Mars direct comment',
@@ -1149,10 +1160,10 @@ describe('Comment likes', () => {
       describe('comments likes fields should contain correct counts', () => {
         let comment2, comment3, comment4, comment5;
         beforeEach(async () => {
-          comment2 = await writeComment(mars, lunaPost.id, 'Mars comment');
-          comment3 = await writeComment(pluto, lunaPost.id, 'Pluto comment');
-          comment4 = await writeComment(luna, lunaPost.id, 'Luna comment');
-          comment5 = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
+          comment2 = await justCreateComment(mars, lunaPost.id, 'Mars comment');
+          comment3 = await justCreateComment(pluto, lunaPost.id, 'Pluto comment');
+          comment4 = await justCreateComment(luna, lunaPost.id, 'Luna comment');
+          comment5 = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
         });
         it('when only first comment is liked', async () =>
           await expectFeedCommentLikesCountsToBe('home', luna, 2, 0, 0, 0));
@@ -1227,7 +1238,7 @@ describe('Comment likes', () => {
           });
 
           it(`and last (and liked) comment's author is banned by viewer [negative OmittedCommentLikes]`, async () => {
-            const comment6 = await writeComment(pluto, lunaPost.id, 'Pluto comment 2');
+            const comment6 = await justCreateComment(pluto, lunaPost.id, 'Pluto comment 2');
             await likeComment(comment6.id, mars);
             await likeComment(comment6.id, jupiter);
             await banUser(luna, pluto);
@@ -1239,23 +1250,23 @@ describe('Comment likes', () => {
 
     describe('#bestOf', () => {
       beforeEach(async () => {
-        const neptune = await createUserAsync('neptune', 'pw');
+        const neptune = await createTestUser('neptune');
 
         await Promise.all([
-          writeComment(jupiter, lunaPost.id, 'Jupiter comment2'),
-          writeComment(jupiter, lunaPost.id, 'Jupiter comment3'),
-          writeComment(pluto, lunaPost.id, 'Pluto comment1'),
-          writeComment(pluto, lunaPost.id, 'Pluto comment2'),
-          writeComment(pluto, lunaPost.id, 'Pluto comment3'),
-          writeComment(mars, lunaPost.id, 'Mars comment1'),
-          writeComment(mars, lunaPost.id, 'Mars comment2'),
-          writeComment(mars, lunaPost.id, 'Mars comment3'),
-          writeComment(luna, lunaPost.id, 'Luna comment1'),
-          writeComment(luna, lunaPost.id, 'Luna comment2'),
-          writeComment(luna, lunaPost.id, 'Luna comment3'),
-          writeComment(neptune, lunaPost.id, 'Neptune comment1'),
-          writeComment(neptune, lunaPost.id, 'Neptune comment2'),
-          writeComment(neptune, lunaPost.id, 'Neptune comment3'),
+          justCreateComment(jupiter, lunaPost.id, 'Jupiter comment2'),
+          justCreateComment(jupiter, lunaPost.id, 'Jupiter comment3'),
+          justCreateComment(pluto, lunaPost.id, 'Pluto comment1'),
+          justCreateComment(pluto, lunaPost.id, 'Pluto comment2'),
+          justCreateComment(pluto, lunaPost.id, 'Pluto comment3'),
+          justCreateComment(mars, lunaPost.id, 'Mars comment1'),
+          justCreateComment(mars, lunaPost.id, 'Mars comment2'),
+          justCreateComment(mars, lunaPost.id, 'Mars comment3'),
+          justCreateComment(luna, lunaPost.id, 'Luna comment1'),
+          justCreateComment(luna, lunaPost.id, 'Luna comment2'),
+          justCreateComment(luna, lunaPost.id, 'Luna comment3'),
+          justCreateComment(neptune, lunaPost.id, 'Neptune comment1'),
+          justCreateComment(neptune, lunaPost.id, 'Neptune comment2'),
+          justCreateComment(neptune, lunaPost.id, 'Neptune comment3'),
         ]);
 
         const promises = [];
@@ -1313,18 +1324,13 @@ describe('Comment likes', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars, jupiter, pluto] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-        createUserAsync('jupiter', 'pw'),
-        createUserAsync('pluto', 'pw'),
-      ]);
-      lunaPost = await createAndReturnPost(luna, 'Luna post cliked');
+      [luna, mars, jupiter, pluto] = await createTestUsers(['luna', 'mars', 'jupiter', 'pluto']);
+      lunaPost = await justCreatePost(luna, 'Luna post cliked');
       await mutualSubscriptions([luna, mars]);
 
-      comment = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
-      await likeComment(comment.id, pluto);
-      await likeComment(comment.id, mars);
+      comment = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
+      await justLikeComment(comment, pluto);
+      await justLikeComment(comment, mars);
     });
 
     describe('comment likes fields should be present', () => {
@@ -1340,10 +1346,10 @@ describe('Comment likes', () => {
       describe('comments likes fields should contain correct counts', () => {
         let comment2, comment3, comment4, comment5;
         beforeEach(async () => {
-          comment2 = await writeComment(mars, lunaPost.id, 'Mars comment');
-          comment3 = await writeComment(pluto, lunaPost.id, 'Pluto comment');
-          comment4 = await writeComment(luna, lunaPost.id, 'Luna comment');
-          comment5 = await writeComment(jupiter, lunaPost.id, 'Jupiter comment');
+          comment2 = await justCreateComment(mars, lunaPost.id, 'Mars comment');
+          comment3 = await justCreateComment(pluto, lunaPost.id, 'Pluto comment');
+          comment4 = await justCreateComment(luna, lunaPost.id, 'Luna comment');
+          comment5 = await justCreateComment(jupiter, lunaPost.id, 'Jupiter comment');
         });
         it('when only first comment is liked', async () =>
           await expectSearchResultsCommentLikesCountsToBe('cliked', luna, 2, 0, 0, 0));
@@ -1418,7 +1424,7 @@ describe('Comment likes', () => {
           });
 
           it(`and last (and liked) comment's author is banned by viewer [negative OmittedCommentLikes]`, async () => {
-            const comment6 = await writeComment(pluto, lunaPost.id, 'Pluto comment 2');
+            const comment6 = await justCreateComment(pluto, lunaPost.id, 'Pluto comment 2');
             await likeComment(comment6.id, mars);
             await likeComment(comment6.id, jupiter);
             await banUser(luna, pluto);
@@ -1429,12 +1435,6 @@ describe('Comment likes', () => {
     });
   });
 });
-
-const createComment = () => async (userContext, postId, body) => {
-  const response = await createCommentAsync(userContext, postId, body);
-  const commentData = await response.json();
-  return commentData.comments;
-};
 
 const fetchPost =
   (app) =>
