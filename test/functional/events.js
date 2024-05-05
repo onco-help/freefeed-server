@@ -44,6 +44,8 @@ import {
   performJSONRequest,
   authHeaders,
   createTestUsers,
+  justCreateComment,
+  justCreatePost,
 } from '../functional/functional_test_helper';
 
 import * as schema from './schemaV2-helper';
@@ -82,15 +84,14 @@ describe('EventService', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars, jupiter, pluto] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-        createUserAsync('jupiter', 'pw'),
-        createUserAsync('pluto', 'pw'),
-      ]);
+      [luna, mars, jupiter, pluto] = await createTestUsers(['luna', 'mars', 'jupiter', 'pluto']);
 
-      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] =
-        await dbAdapter.getUsersByIds([luna.user.id, mars.user.id, jupiter.user.id, pluto.user.id]);
+      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] = [
+        luna.user,
+        mars.user,
+        jupiter.user,
+        pluto.user,
+      ];
 
       await mutualSubscriptions([luna, mars]);
       await subscribeToAsync(jupiter, luna);
@@ -212,12 +213,8 @@ describe('EventService', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-      ]);
-
-      [lunaUserModel, marsUserModel] = await dbAdapter.getUsersByIds([luna.user.id, mars.user.id]);
+      [luna, mars] = await createTestUsers(['luna', 'mars']);
+      [lunaUserModel, marsUserModel] = [luna.user, mars.user];
     });
 
     it('should create user_subscribed event when user subscribed', async () => {
@@ -363,9 +360,8 @@ describe('EventService', () => {
     let luna, mars, lunasPost, marsesComment;
     beforeEach(async () => {
       [luna, mars] = await createTestUsers(['luna', 'mars']);
-      lunasPost = await createAndReturnPost(luna, 'Post');
-      const resp = await createCommentAsync(mars, lunasPost.id, 'Comment');
-      ({ comments: marsesComment } = await resp.json());
+      lunasPost = await justCreatePost(luna, 'Post');
+      marsesComment = await justCreateComment(mars, lunasPost.id, 'Comment');
     });
 
     it(`should create comment_moderated event for Mars when Luna removes Mars'es comment`, async () => {
@@ -397,12 +393,8 @@ describe('EventService', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-      ]);
-
-      [lunaUserModel, marsUserModel] = await dbAdapter.getUsersByIds([luna.user.id, mars.user.id]);
+      [luna, mars] = await createTestUsers(['luna', 'mars']);
+      [lunaUserModel, marsUserModel] = [luna.user, mars.user];
       await goPrivate(luna);
     });
 
@@ -537,15 +529,14 @@ describe('EventService', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars, jupiter, pluto] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-        createUserAsync('jupiter', 'pw'),
-        createUserAsync('pluto', 'pw'),
-      ]);
+      [luna, mars, jupiter, pluto] = await createTestUsers(['luna', 'mars', 'jupiter', 'pluto']);
 
-      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] =
-        await dbAdapter.getUsersByIds([luna.user.id, mars.user.id, jupiter.user.id, pluto.user.id]);
+      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] = [
+        luna.user,
+        mars.user,
+        jupiter.user,
+        pluto.user,
+      ];
     });
 
     describe('creation', () => {
@@ -1012,15 +1003,14 @@ describe('EventService', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars, jupiter, pluto] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-        createUserAsync('jupiter', 'pw'),
-        createUserAsync('pluto', 'pw'),
-      ]);
+      [luna, mars, jupiter, pluto] = await createTestUsers(['luna', 'mars', 'jupiter', 'pluto']);
 
-      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] =
-        await dbAdapter.getUsersByIds([luna.user.id, mars.user.id, jupiter.user.id, pluto.user.id]);
+      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] = [
+        luna.user,
+        mars.user,
+        jupiter.user,
+        pluto.user,
+      ];
 
       await mutualSubscriptions([luna, mars, jupiter, pluto]);
     });
@@ -1224,15 +1214,14 @@ describe('EventService', () => {
     };
 
     beforeEach(async () => {
-      [luna, mars, jupiter, pluto] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-        createUserAsync('jupiter', 'pw'),
-        createUserAsync('pluto', 'pw'),
-      ]);
+      [luna, mars, jupiter, pluto] = await createTestUsers(['luna', 'mars', 'jupiter', 'pluto']);
 
-      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] =
-        await dbAdapter.getUsersByIds([luna.user.id, mars.user.id, jupiter.user.id, pluto.user.id]);
+      [lunaUserModel, marsUserModel, jupiterUserModel, plutoUserModel] = [
+        luna.user,
+        mars.user,
+        jupiter.user,
+        pluto.user,
+      ];
       await mutualSubscriptions([luna, jupiter]);
       await goPrivate(jupiter);
     });
@@ -1420,7 +1409,7 @@ describe('EventService', () => {
       let post;
 
       beforeEach(async () => {
-        post = await createAndReturnPostToFeed(luna, luna, 'Test post');
+        post = await justCreatePost(luna, 'Test post');
       });
 
       it('should create mention_in_comment event for mentioned user', async () => {
@@ -1705,12 +1694,8 @@ describe('EventService', () => {
     let lunaUserModel, marsUserModel;
 
     beforeEach(async () => {
-      [luna, mars] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-      ]);
-
-      [lunaUserModel, marsUserModel] = await dbAdapter.getUsersByIds([luna.user.id, mars.user.id]);
+      [luna, mars] = await createTestUsers(['luna', 'mars']);
+      [lunaUserModel, marsUserModel] = [luna.user, mars.user];
     });
 
     describe("event shouldn't be deleted when", () => {
@@ -1811,12 +1796,8 @@ describe('EventsController', () => {
     let luna, mars, lunaUserModel, marsUserModel;
 
     beforeEach(async () => {
-      [luna, mars] = await Promise.all([
-        createUserAsync('luna', 'pw'),
-        createUserAsync('mars', 'pw'),
-      ]);
-
-      [lunaUserModel, marsUserModel] = await dbAdapter.getUsersByIds([luna.user.id, mars.user.id]);
+      [luna, mars] = await createTestUsers(['luna', 'mars']);
+      [lunaUserModel, marsUserModel] = [luna.user, mars.user];
 
       await mutualSubscriptions([luna, mars]);
     });
@@ -2252,12 +2233,8 @@ describe('Unread events counter', () => {
 
   beforeEach(async () => {
     await cleanDB($pg_database);
-    [luna, mars] = await Promise.all([
-      createUserAsync('luna', 'pw'),
-      createUserAsync('mars', 'pw'),
-    ]);
-
-    [lunaUserModel] = await dbAdapter.getUsersByIds([luna.user.id]);
+    [luna, mars] = await createTestUsers(['luna', 'mars']);
+    lunaUserModel = luna.user;
   });
 
   const getUnreadEventsCountFromWhoAmI = async (user) => {
@@ -2371,10 +2348,7 @@ describe('Unread events counter realtime updates for ', () => {
 
   beforeEach(async () => {
     await cleanDB($pg_database);
-    [luna, mars] = await Promise.all([
-      createUserAsync('luna', 'pw'),
-      createUserAsync('mars', 'pw'),
-    ]);
+    [luna, mars] = await createTestUsers(['luna', 'mars']);
   });
 
   describe('user_subscribed event', () => {
@@ -2876,10 +2850,7 @@ describe('eventById', () => {
 
   beforeEach(async () => {
     await cleanDB($pg_database);
-    [luna, mars] = await Promise.all([
-      createUserAsync('luna', 'pw'),
-      createUserAsync('mars', 'pw'),
-    ]);
+    [luna, mars] = await createTestUsers(['luna', 'mars']);
     // To create some records in events history
     await mutualSubscriptions([luna, mars]);
   });

@@ -35,15 +35,15 @@ describe('Privates', () => {
     });
 
     describe('publish private post to public feed', () => {
-      const group = 'group';
+      let group;
 
       beforeEach(async () => {
-        await Promise.all([
+        [, group] = await Promise.all([
           funcTestHelper.mutualSubscriptions([marsContext, lunaContext]),
-          funcTestHelper.createGroupAsync(lunaContext, group),
+          funcTestHelper.createGroupAsync(lunaContext, 'group'),
         ]);
 
-        await funcTestHelper.subscribeToAsync(zeusContext, { username: group });
+        await funcTestHelper.subscribeToAsync(zeusContext, group);
       });
 
       it('should send private post to public feed', (done) => {
@@ -52,7 +52,7 @@ describe('Privates', () => {
           .post(`${app.context.config.host}/v1/posts`)
           .send({
             post: { body: post },
-            meta: { feeds: [group, lunaContext.user.username] },
+            meta: { feeds: [group.username, lunaContext.user.username] },
             authToken: lunaContext.authToken,
           })
           .end(() => {
@@ -1155,13 +1155,16 @@ describe('Privates', () => {
   });
 
   describe('Checking, that private posts are correctly propagated', () => {
-    const lunaContext = {};
-    const marsContext = {};
-    const zeusContext = {};
+    let lunaContext, marsContext, zeusContext;
 
-    beforeEach(funcTestHelper.createUserCtx(lunaContext, 'luna', 'pw'));
-    beforeEach(funcTestHelper.createUserCtx(marsContext, 'mars', 'pw'));
-    beforeEach(funcTestHelper.createUserCtx(zeusContext, 'zeus', 'pw'));
+    beforeEach(async () => {
+      [lunaContext, marsContext, zeusContext] = await funcTestHelper.createTestUsers([
+        'luna',
+        'mars',
+        'zeus',
+      ]);
+    });
+
     beforeEach(() => funcTestHelper.mutualSubscriptions([lunaContext, marsContext, zeusContext]));
     beforeEach(() => funcTestHelper.goPrivate(lunaContext));
 

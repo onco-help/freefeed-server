@@ -191,7 +191,7 @@ describe('PostsController', () => {
           beforeEach(async () => {
             [zeusCtx, post] = await Promise.all([
               funcTestHelper.createUserAsync('zeus', 'password'),
-              funcTestHelper.createAndReturnPostToFeed(marsCtx, ctx, 'body'),
+              funcTestHelper.justCreatePost(ctx, 'body', [ctx.username, marsCtx.username]),
             ]);
           });
 
@@ -379,7 +379,7 @@ describe('PostsController', () => {
       beforeEach(async () => {
         const screenName = 'Pepyatka Developers';
 
-        await funcTestHelper.createGroupAsync(ctx, groupName, screenName);
+        await funcTestHelper.justCreateGroup(ctx, groupName, screenName);
 
         const yole = await funcTestHelper.createUserAsync(otherUserName, 'pw');
         otherUserAuthToken = yole.authToken;
@@ -638,7 +638,7 @@ describe('PostsController', () => {
 
       [marsCtx, post] = await Promise.all([
         funcTestHelper.createUserAsync('mars', 'password2'),
-        funcTestHelper.createAndReturnPost(context, 'Post body'),
+        funcTestHelper.justCreatePost(context, 'Post body'),
       ]);
 
       context.post = post;
@@ -650,7 +650,7 @@ describe('PostsController', () => {
 
       beforeEach(async () => {
         const screenName = 'Pepyatka Developers';
-        await funcTestHelper.createGroupAsync(context, groupName, screenName);
+        await funcTestHelper.justCreateGroup(context, groupName, screenName);
       });
 
       it("should not update group's last activity", (done) => {
@@ -752,7 +752,7 @@ describe('PostsController', () => {
       let postOfMars;
 
       beforeEach(async () => {
-        postOfMars = await funcTestHelper.createAndReturnPost(marsCtx, 'I am mars!');
+        postOfMars = await funcTestHelper.justCreatePost(marsCtx, 'I am mars!');
         await funcTestHelper.banUser(context, marsCtx);
       });
 
@@ -777,7 +777,7 @@ describe('PostsController', () => {
 
       const [marsCtx, post] = await Promise.all([
         funcTestHelper.createUserAsync('mars', 'password2'),
-        funcTestHelper.createAndReturnPost(context, 'Post body'),
+        funcTestHelper.justCreatePost(context, 'Post body'),
       ]);
 
       context.post = post;
@@ -850,7 +850,7 @@ describe('PostsController', () => {
 
       const [marsCtx, post] = await Promise.all([
         funcTestHelper.createUserAsync('mars', 'password2'),
-        funcTestHelper.createAndReturnPost(context, 'Post body'),
+        funcTestHelper.justCreatePost(context, 'Post body'),
       ]);
 
       context.post = post;
@@ -899,14 +899,14 @@ describe('PostsController', () => {
     beforeEach(async () => {
       context = await funcTestHelper.createUserAsync('Luna', 'password');
 
-      const [marsCtx, response] = await Promise.all([
+      const [marsCtx, post] = await Promise.all([
         funcTestHelper.createUserAsync('mars', 'password2'),
-        funcTestHelper.createPostWithCommentsDisabled(context, 'Post body', true),
+        funcTestHelper.justCreatePost(context, 'Post body'),
       ]);
 
-      const data = await response.json();
+      await post.setCommentsDisabled('1');
 
-      context.post = data.posts;
+      context.post = post;
       otherUserAuthToken = marsCtx.authToken;
     });
 
@@ -954,7 +954,7 @@ describe('PostsController', () => {
 
       const [yoleCtx, post] = await Promise.all([
         funcTestHelper.createUserAsync('yole', 'pw'),
-        funcTestHelper.createAndReturnPost(context, 'Post body'),
+        funcTestHelper.justCreatePost(context, 'Post body'),
       ]);
 
       context.post = post;
@@ -1068,8 +1068,8 @@ describe('PostsController', () => {
         [luna, mars, yole] = await funcTestHelper.createTestUsers(3);
         await funcTestHelper.mutualSubscriptions([luna, mars]);
         await funcTestHelper.mutualSubscriptions([luna, yole]);
-        celestials = await funcTestHelper.createGroupAsync(luna, 'celestials');
-        evilmartians = await funcTestHelper.createGroupAsync(mars, 'evilmartians');
+        celestials = await funcTestHelper.justCreateGroup(luna, 'celestials');
+        evilmartians = await funcTestHelper.justCreateGroup(mars, 'evilmartians');
       });
 
       const updatePost = async (postObj, userContext, parameters) => {
@@ -1100,7 +1100,7 @@ describe('PostsController', () => {
 
       describe('Luna creates post in their feed', () => {
         beforeEach(async () => {
-          post = await funcTestHelper.createAndReturnPostToFeed([luna], luna, 'Post body');
+          post = await funcTestHelper.justCreatePost(luna, 'Post body');
         });
 
         it('should be able to change destinations of regular post', async () => {
@@ -1131,7 +1131,10 @@ describe('PostsController', () => {
 
       describe('Luna creates direct post', () => {
         beforeEach(async () => {
-          post = await funcTestHelper.createAndReturnPostToFeed([mars], luna, 'Post body');
+          post = await funcTestHelper.justCreatePost(luna, 'Post body', [
+            mars.username,
+            luna.username,
+          ]);
         });
 
         it('should be able to add recipient to direct post', async () => {
@@ -1146,7 +1149,11 @@ describe('PostsController', () => {
 
       describe('Luna creates direct post with two recipients', () => {
         beforeEach(async () => {
-          post = await funcTestHelper.createAndReturnPostToFeed([mars, yole], luna, 'Post body');
+          post = await funcTestHelper.justCreatePost(luna, 'Post body', [
+            mars.username,
+            yole.username,
+            luna.username,
+          ]);
         });
 
         it('should not be able to remove recipient from direct post', async () => {
@@ -1169,7 +1176,7 @@ describe('PostsController', () => {
 
     beforeEach(async () => {
       context = await funcTestHelper.createUserAsync('Luna', 'password');
-      context.post = await funcTestHelper.createAndReturnPost(context, 'Post body');
+      context.post = await funcTestHelper.justCreatePost(context, 'Post body');
     });
 
     it('should show a post', (done) => {
@@ -1244,7 +1251,7 @@ describe('PostsController', () => {
 
     beforeEach(async () => {
       context = await funcTestHelper.createUserAsync('Luna', 'password');
-      context.post = await funcTestHelper.createAndReturnPost(context, 'Post body');
+      context.post = await funcTestHelper.justCreatePost(context, 'Post body');
     });
 
     it('should hide and unhide post', (done) => {
@@ -1300,7 +1307,7 @@ describe('PostsController', () => {
 
       const [yoleCtx, post] = await Promise.all([
         funcTestHelper.createUserAsync('yole', 'pw'),
-        funcTestHelper.createAndReturnPost(context, 'Post body'),
+        funcTestHelper.justCreatePost(context, 'Post body'),
       ]);
 
       context.post = post;

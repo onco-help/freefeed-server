@@ -8,8 +8,8 @@ import { PubSubAdapter } from '../../../app/support/PubSubAdapter';
 import { dbAdapter, PubSub } from '../../../app/models';
 import {
   authHeaders,
-  createAndReturnPostToFeed,
   createTestUsers,
+  justCreatePost,
   mutualSubscriptions,
   performJSONRequest,
 } from '../functional_test_helper';
@@ -20,7 +20,7 @@ import { getEventText } from '../../../app/mailers/NotificationDigestMailer';
 
 describe('POST /v2/posts/:postId/leave', () => {
   let luna, mars, venus, jupiter;
-  beforeEach(async () => {
+  before(async () => {
     await cleanDB($pg_database);
 
     [luna, mars, venus, jupiter] = await createTestUsers(['luna', 'mars', 'venus', 'jupiter']);
@@ -30,7 +30,10 @@ describe('POST /v2/posts/:postId/leave', () => {
   describe('Luna create direct with Mars and Venus', () => {
     let post;
     beforeEach(async () => {
-      post = await createAndReturnPostToFeed([mars.user, venus.user], luna, 'Hello');
+      post = await justCreatePost(luna, 'Hello', [luna.username, mars.username, venus.username]);
+    });
+    afterEach(async () => {
+      await post.destroy();
     });
 
     it('should allow Mars to leave direct', async () => {
@@ -59,7 +62,10 @@ describe('POST /v2/posts/:postId/leave', () => {
     });
 
     describe('Mars leaving direct', () => {
-      beforeEach(() => leave(post, mars));
+      beforeEach(async () => {
+        await clearAllEvents();
+        await leave(post, mars);
+      });
 
       it('should not allow Mars to see post', async () => {
         const resp = await getPost(post, mars);
@@ -235,6 +241,10 @@ async function getSerializedEvents(userId) {
   const userObj = await dbAdapter.getUserById(userId);
   const events = await dbAdapter.getUserEvents(userObj.intId, [EVENT_TYPES.DIRECT_LEFT]);
   return serializeEvents(events, userId);
+}
+
+async function clearAllEvents() {
+  await dbAdapter.database.raw(`delete from events`);
 }
 
 function stripHTML(str) {
