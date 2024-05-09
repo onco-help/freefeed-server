@@ -16,19 +16,24 @@ import {
   authHeaders,
   updateUserAsync,
   like,
-  likeComment,
+  justLikeComment,
+  justCreateComment,
 } from './functional_test_helper';
 import Session from './realtime-session';
 
 describe('Symmetric bans', () => {
   beforeEach(() => cleanDB(dbAdapter.database));
+
+  let luna;
+  let mars;
+  let venus;
+  beforeEach(async () => {
+    [luna, mars, venus] = await createTestUsers(['luna', 'mars', 'venus']);
+  });
+
   describe('Luna bans Mars, Venus wrote post', () => {
-    let luna;
-    let mars;
-    let venus;
     let post;
     beforeEach(async () => {
-      [luna, mars, venus] = await createTestUsers(['luna', 'mars', 'venus']);
       post = await createAndReturnPost(venus, 'Post body');
       await banUser(luna, mars);
     });
@@ -36,8 +41,8 @@ describe('Symmetric bans', () => {
     describe('Comments visibility', () => {
       describe('Luna and Mars both commented the Venus post', () => {
         beforeEach(async () => {
-          await createComment(luna, post.id, 'Comment from Luna');
-          await createComment(mars, post.id, 'Comment from Mars');
+          await justCreateComment(luna, post.id, 'Comment from Luna');
+          await justCreateComment(mars, post.id, 'Comment from Mars');
         });
 
         it('should show all comments to Venus', async () => {
@@ -189,9 +194,9 @@ describe('Symmetric bans', () => {
       describe('Luna and Mars both liked the Venus comment', () => {
         let comment;
         beforeEach(async () => {
-          ({ comments: comment } = await createComment(venus, post.id, 'Venus comment'));
-          await likeComment(comment.id, luna);
-          await likeComment(comment.id, mars);
+          comment = await justCreateComment(venus, post.id, 'Venus comment');
+          await justLikeComment(comment, luna);
+          await justLikeComment(comment, mars);
         });
 
         it('should show both comment likes to Venus', async () => {
@@ -285,6 +290,58 @@ describe('Symmetric bans', () => {
       });
     });
   });
+
+  describe('Luna wrote post, Mars commented it, Mars bans Luna', () => {
+    let post, comment;
+    beforeEach(async () => {
+      post = await createAndReturnPost(luna, 'Post body');
+      comment = await justCreateComment(mars, post.id, 'Comment from Mars');
+      await banUser(mars, luna);
+    });
+
+    it(`should show Mars' comment to Luna`, async () => {
+      const resp = await fetchPost(post.id, luna);
+      expect(resp.comments, 'to satisfy', [
+        { hideType: Comment.VISIBLE, body: 'Comment from Mars', createdBy: mars.user.id },
+      ]);
+    });
+
+    it(`should allow Luna to like Mars' comment`, async () => {
+      const resp = await likeComment(comment.id, luna);
+      expect(resp.__httpCode, 'to be', 200);
+    });
+
+    describe('Realtime', () => {
+      let port;
+      before(async () => {
+        const app = await getSingleton();
+        port = process.env.PEPYATKA_SERVER_PORT || app.context.config.port;
+        const pubsubAdapter = new PubSubAdapter($database);
+        PubSub.setPublisher(pubsubAdapter);
+      });
+
+      let lunaSession;
+      beforeEach(async () => {
+        lunaSession = await Session.create(port, 'Luna session');
+        await lunaSession.sendAsync('auth', { authToken: luna.authToken });
+        await lunaSession.sendAsync('subscribe', { post: [post.id] });
+      });
+
+      afterEach(() => lunaSession.disconnect());
+
+      it(`should deliver "${eventNames.COMMENT_LIKE_ADDED}" to Luna`, async () => {
+        const test = lunaSession.receiveWhile(eventNames.COMMENT_LIKE_ADDED, () =>
+          likeComment(comment.id, luna),
+        );
+        await expect(test, 'when fulfilled', 'to satisfy', {
+          comments: {
+            hideType: Comment.VISIBLE,
+            createdBy: mars.user.id,
+          },
+        });
+      });
+    });
+  });
 });
 
 function fetchPost(postId, userCtx) {
@@ -298,6 +355,10 @@ function createComment(userCtx, postId, body) {
     { comment: { body, postId } },
     authHeaders(userCtx),
   );
+}
+
+function likeComment(commentId, userCtx) {
+  return performJSONRequest('POST', `/v2/comments/${commentId}/like`, null, authHeaders(userCtx));
 }
 
 function getCommentLikes(commentId, userCtx) {

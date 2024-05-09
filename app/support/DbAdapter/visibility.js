@@ -1,3 +1,4 @@
+import pgFormat from 'pg-format';
 import { intersection } from 'lodash';
 
 import { List } from '../open-lists';
@@ -152,13 +153,15 @@ const visibilityTrait = (superClass) =>
             `${actionsTable}.user_id`,
             viewerBannedBy.map((r) => r[useIntBanIds ? 'id' : 'uid']),
           ),
-          // And the post is not in some group, managed bi viewer, with bans disabled
+          // And the post is not in some group, managed by viewer, with bans disabled
           sqlNot(
             sqlIntarrayIn(
               `${postsTable}.destination_feed_ids`,
               feedsOfManagedGroupsWithDisabledBans,
             ),
           ),
+          // And the post is not authored by the viewer
+          pgFormat(`${postsTable}.user_id <> %L`, viewerId),
         ]),
       ];
     }
@@ -319,8 +322,9 @@ const visibilityTrait = (superClass) =>
           List.union(
             // All who banned comment author, except those who disabled bans
             List.difference(authorBannedBy, allWhoDisabledBans),
-            // All banned by comment author, except ADMINS who disabled bans
-            List.difference(bannedByAuthor, adminsWhoDisabledBans),
+            // All banned by comment author, except ADMINS who disabled bans and
+            // the post author
+            List.difference(bannedByAuthor, List.union(adminsWhoDisabledBans, [postAuthor])),
           ),
         ),
       );
