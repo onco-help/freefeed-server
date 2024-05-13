@@ -40,9 +40,10 @@ describe('Symmetric bans', () => {
 
     describe('Comments visibility', () => {
       describe('Luna and Mars both commented the Venus post', () => {
+        let lunaComment, marsComment;
         beforeEach(async () => {
-          await justCreateComment(luna, post.id, 'Comment from Luna');
-          await justCreateComment(mars, post.id, 'Comment from Mars');
+          lunaComment = await justCreateComment(luna, post.id, 'Comment from Luna');
+          marsComment = await justCreateComment(mars, post.id, 'Comment from Mars');
         });
 
         it('should show all comments to Venus', async () => {
@@ -65,6 +66,70 @@ describe('Symmetric bans', () => {
           expect(resp.comments, 'to satisfy', [
             { body: 'Comment from Mars', createdBy: mars.user.id },
           ]);
+        });
+
+        describe('Unlock banned comments (Venus liked both comments)', () => {
+          beforeEach(() =>
+            Promise.all([likeComment(lunaComment.id, venus), likeComment(marsComment.id, venus)]),
+          );
+
+          it(`should not allow Luna to see Mars' comment`, async () => {
+            const resp = await getComment(marsComment.id, luna);
+            expect(resp.comments, 'to satisfy', {
+              hideType: Comment.HIDDEN_AUTHOR_BANNED,
+              createdBy: null,
+              likes: 0,
+            });
+          });
+
+          it(`should allow Luna to see unlocked Mars' comment`, async () => {
+            const resp = await getUnlockedComment(marsComment.id, luna);
+            expect(resp.comments, 'to satisfy', {
+              hideType: Comment.VISIBLE,
+              createdBy: mars.user.id,
+              likes: 0, // Still shouldn't show likes
+            });
+          });
+
+          it(`should not allow Mars to see Luna's comment`, async () => {
+            const resp = await getComment(lunaComment.id, mars);
+            expect(resp.comments, 'to satisfy', {
+              hideType: Comment.HIDDEN_VIEWER_BANNED,
+              createdBy: null,
+              likes: 0,
+            });
+          });
+
+          it(`should not allow Mars to see unlocked Luna's comment`, async () => {
+            const resp = await getComment(lunaComment.id, mars);
+            expect(resp.comments, 'to satisfy', {
+              hideType: Comment.HIDDEN_VIEWER_BANNED,
+              createdBy: null,
+              likes: 0,
+            });
+          });
+
+          describe('Mars bans Luna (so they are mutually banned)', () => {
+            beforeEach(() => banUser(mars, luna));
+
+            it(`should not allow Luna to see unlocked Mars' comment`, async () => {
+              const resp = await getUnlockedComment(marsComment.id, luna);
+              expect(resp.comments, 'to satisfy', {
+                hideType: Comment.HIDDEN_VIEWER_BANNED,
+                createdBy: null,
+                likes: 0,
+              });
+            });
+
+            it(`should not allow Mars to see unlocked Luna's comment`, async () => {
+              const resp = await getUnlockedComment(lunaComment.id, mars);
+              expect(resp.comments, 'to satisfy', {
+                hideType: Comment.HIDDEN_VIEWER_BANNED,
+                createdBy: null,
+                likes: 0,
+              });
+            });
+          });
         });
 
         describe('Luna and Mars wants to see all hidden comments', () => {
@@ -289,6 +354,8 @@ describe('Symmetric bans', () => {
         });
       });
     });
+
+    describe('Unlock banned comments', () => {});
   });
 
   describe('Luna wrote post, Mars commented it, Mars bans Luna', () => {
@@ -363,4 +430,17 @@ function likeComment(commentId, userCtx) {
 
 function getCommentLikes(commentId, userCtx) {
   return performJSONRequest('GET', `/v2/comments/${commentId}/likes`, null, authHeaders(userCtx));
+}
+
+function getComment(commentId, userCtx) {
+  return performJSONRequest('GET', `/v2/comments/${commentId}`, null, authHeaders(userCtx));
+}
+
+function getUnlockedComment(commentId, userCtx) {
+  return performJSONRequest(
+    'GET',
+    `/v2/comments/${commentId}?unlock-banned`,
+    null,
+    authHeaders(userCtx),
+  );
 }

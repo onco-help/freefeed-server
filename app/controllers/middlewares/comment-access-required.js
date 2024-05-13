@@ -22,10 +22,14 @@ import { applyMiddleware } from '.';
  * Otherwise, it returns comment as with non-empty hideType and with placeholder
  * body.
  *
- * @param {{ mustBeVisible: bool}} options
+ * If 'bannedUnlockParam' is set and the URL parameter with this name is
+ * present, it unlocks comments from the banned users (only when 'mustBeVisible'
+ * is false).
+ *
+ * @param {{ mustBeVisible: bool, bannedUnlockParam?: string}} options
  * @returns {import("koa").Middleware}
  */
-export function commentAccessRequired({ mustBeVisible }) {
+export function commentAccessRequired({ mustBeVisible, bannedUnlockParam = null }) {
   return async (ctx, next) => {
     const { user: viewer } = ctx.state;
 
@@ -56,18 +60,31 @@ export function commentAccessRequired({ mustBeVisible }) {
       throw new NotFoundException("Can't find comment");
     }
 
+    const unlockBannedComments =
+      bannedUnlockParam !== null && ctx.request.query[bannedUnlockParam] !== undefined;
+    ctx.state.unlockBannedComments = unlockBannedComments;
+
     // Check post access first and then the comment access
     ctx.params.postId = comment.postId;
     await applyMiddleware(postAccessRequired(), ctx);
 
-    const banHideType = await dbAdapter.isCommentBannedForViewer(comment.id, viewer?.id);
+    const banHideTypes = await dbAdapter.isCommentBannedForViewer(comment.id, viewer?.id);
 
-    if (mustBeVisible && banHideType === Comment.HIDDEN_AUTHOR_BANNED) {
-      throw new ForbiddenException('You have banned the author of this comment');
-    } else if (mustBeVisible && banHideType === Comment.HIDDEN_VIEWER_BANNED) {
-      throw new ForbiddenException('The author of this comment has banned you');
-    } else if (banHideType) {
-      comment.setHideType(banHideType);
+    if (banHideTypes) {
+      if (mustBeVisible) {
+        if (banHideTypes.includes(Comment.HIDDEN_AUTHOR_BANNED)) {
+          throw new ForbiddenException('You have banned the author of this comment');
+        } else if (banHideTypes.includes(Comment.HIDDEN_VIEWER_BANNED)) {
+          throw new ForbiddenException('The author of this comment has banned you');
+        }
+
+        comment.setHideType(banHideTypes[0]);
+      } else {
+        const filteredTypes = unlockBannedComments
+          ? banHideTypes.filter((t) => t !== Comment.HIDDEN_AUTHOR_BANNED)
+          : banHideTypes;
+        comment.setHideType(filteredTypes[0] ?? Comment.VISIBLE);
+      }
     }
 
     if (comment.hideType !== Comment.VISIBLE && mustBeVisible) {

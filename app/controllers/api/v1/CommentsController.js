@@ -109,10 +109,10 @@ export const destroy = compose([
 ]);
 
 export const getById = compose([
-  commentAccessRequired({ mustBeVisible: false }),
+  commentAccessRequired({ mustBeVisible: false, bannedUnlockParam: 'unlock-banned' }),
   async (ctx) => {
-    const { comment, user } = ctx.state;
-    ctx.body = await serializeCommentFull(comment, user?.id);
+    const { comment, user, unlockBannedComments } = ctx.state;
+    ctx.body = await serializeCommentFull(comment, user?.id, { unlockBannedComments });
   },
 ]);
 

@@ -61,6 +61,11 @@ to comment, the middleware acts as follows:
 * If the comment-related resource is requested (currently it is a comment like),
   the middleware throws a 403 error.
 
+Also, the viewer can "unlock" the comment using the "unlock-banned" URL
+parameter (`GET /v2/comments/:commentId?unlock-banned`). This parameter removes
+the HIDDEN_AUTHOR_BANNED hide type from comment and allows the comment to be
+viewed (if it is not HIDDEN_VIEWER_BANNED).
+
 ### In code
 The action visibility rules calculates in the following places:
 * app/support/DbAdapter/visibility.js, bannedActionsSQLsFabric and

@@ -180,7 +180,7 @@ const visibilityTrait = (superClass) =>
 
     async isCommentBannedForViewer(commentId, viewerId = null) {
       const m = await this.areCommentsBannedForViewerAssoc([commentId], viewerId);
-      return m[commentId] ?? false;
+      return m.get(commentId) ?? null;
     }
 
     async areCommentsBannedForViewerAssoc(commentIds, viewerId = null) {
@@ -197,15 +197,22 @@ const visibilityTrait = (superClass) =>
           `,
         { commentIds },
       );
-      const result = {};
+      const result = new Map();
 
       for (const row of rows) {
+        const s = [];
+
         if (row.banned_by_viewer) {
-          result[row.uid] = Comment.HIDDEN_AUTHOR_BANNED;
-        } else if (row.banned_by_author) {
-          result[row.uid] = Comment.HIDDEN_VIEWER_BANNED;
-        } else {
-          result[row.uid] = false;
+          // Always first, when present
+          s.push(Comment.HIDDEN_AUTHOR_BANNED);
+        }
+
+        if (row.banned_by_author) {
+          s.push(Comment.HIDDEN_VIEWER_BANNED);
+        }
+
+        if (s.length > 0) {
+          result.set(row.uid, s);
         }
       }
 
