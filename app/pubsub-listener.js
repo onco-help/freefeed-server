@@ -364,9 +364,16 @@ export default class PubsubListener {
 
         // Bans
         if (post && userId) {
-          const bannedUserIds = (!usersDisabledBans.includes(userId) && bansMap.get(userId)) || [];
-          const bannedByUserIds =
-            (!adminsDisabledBans.includes(userId) && bannedByMap.get(userId)) || [];
+          let bannedUserIds = bansMap.get(userId) ?? [];
+          let bannedByUserIds = bannedByMap.get(userId) ?? [];
+
+          if (usersDisabledBans.includes(userId)) {
+            bannedUserIds = [];
+          }
+
+          if (adminsDisabledBans.includes(userId) || userId === post.userId) {
+            bannedByUserIds = [];
+          }
 
           const isBanned = (id) => bannedUserIds.includes(id) || bannedByUserIds.includes(id);
 

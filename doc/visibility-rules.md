@@ -38,15 +38,20 @@ Comments, Likes and Comment likes (hereinafter "actions") shares the same logic.
 
 Actions on the given post is not visible for viewer if the post is not visible.
 
-Action is visible when (AND-joined):
-* The action author is not banned by viewer OR post is published to a group
-  where the viewer had disabled bans.
-* Viewer is not banned by the action author OR post is published to a group where
-  the viewer *is admin* and had disabled bans.
+Action is invisible when the action author is banned by viewer or the viewer is
+banned by the action author, with the following exceptions:
+
+* When *the action author is banned* by viewer, action is visible when:
+  * The post is published to a group where the viewer had disabled bans.
+* When *the viewer is banned* by the action author, action is visible when
+  (OR-joined):
+  * The post is published to a group where the viewer *is admin* and had
+    disabled bans;
+  * The post is authored by the viewer.
 
 If the post is visible but the comment is not, the comment may appear as a stub
-(with hideType = HIDDEN_AUTHOR_BANNED). It depends on *hideCommentsOfTypes* field of
-viewer properties.
+(with 'hideType' field value of HIDDEN_AUTHOR_BANNED or HIDDEN_VIEWER_BANNED).
+It depends on *hideCommentsOfTypes* field of viewer properties.
 
 Handling the visibility of comments is a bit special (see the
 'commentAccessRequired' middleware). If the viewer has access to post, but not
@@ -55,6 +60,11 @@ to comment, the middleware acts as follows:
   appropriate hideType and with a placeholder instead of the body.
 * If the comment-related resource is requested (currently it is a comment like),
   the middleware throws a 403 error.
+
+Also, the viewer can "unlock" the comment using the "unlock-banned" URL
+parameter (`GET /v2/comments/:commentId?unlock-banned`). This parameter removes
+the HIDDEN_AUTHOR_BANNED hide type from comment and allows the comment to be
+viewed (if it is not HIDDEN_VIEWER_BANNED).
 
 ### In code
 The action visibility rules calculates in the following places:
