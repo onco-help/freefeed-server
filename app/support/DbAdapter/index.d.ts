@@ -243,11 +243,11 @@ export class DbAdapter {
   ): Promise<(actionsTable: string, postsTable?: string, useIntBanIds?: boolean) => string>;
   isPostVisibleForViewer(postId: UUID, viewerId?: UUID): Promise<boolean>;
   getUsersWhoCanSeePost(postProps: { authorId: UUID; destFeeds: number[] }): Promise<List<UUID>>;
-  isCommentBannedForViewer(commentId: UUID, viewerId?: UUID): Promise<boolean>;
+  isCommentBannedForViewer(commentId: UUID, viewerId?: UUID): Promise<number[] | null>;
   areCommentsBannedForViewerAssoc(
     commentIds: UUID[],
     viewerId?: UUID,
-  ): Promise<{ [id: UUID]: boolean }>;
+  ): Promise<Map<UUID, number[]>>;
 
   getGroupsVisibility(accountIds: UUID[], viewerId: UUID | null): Promise<{ [k: UUID]: boolean }>;
 

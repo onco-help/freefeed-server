@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.20.0] - Not released
+#### Changed
+- Comments from users who have blocked the current viewer are visible to the
+  viewer under his own posts.
+- The viewer can "unlock" the comment using the "unlock-banned" URL parameter
+  (`GET /v2/comments/:commentId?unlock-banned`). This parameter removes the
+  HIDDEN_AUTHOR_BANNED hide type from comment and allows the comment to be
+  viewed (if it is not HIDDEN_VIEWER_BANNED).
+
 ## [2.19.1] - 2024-04-26
 #### Changed
 - Repair the bans symmetry. Comments of users, who have blocked the current

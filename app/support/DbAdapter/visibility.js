@@ -1,3 +1,4 @@
+import pgFormat from 'pg-format';
 import { intersection } from 'lodash';
 
 import { List } from '../open-lists';
@@ -152,13 +153,15 @@ const visibilityTrait = (superClass) =>
             `${actionsTable}.user_id`,
             viewerBannedBy.map((r) => r[useIntBanIds ? 'id' : 'uid']),
           ),
-          // And the post is not in some group, managed bi viewer, with bans disabled
+          // And the post is not in some group, managed by viewer, with bans disabled
           sqlNot(
             sqlIntarrayIn(
               `${postsTable}.destination_feed_ids`,
               feedsOfManagedGroupsWithDisabledBans,
             ),
           ),
+          // And the post is not authored by the viewer
+          pgFormat(`${postsTable}.user_id <> %L`, viewerId),
         ]),
       ];
     }
@@ -177,7 +180,7 @@ const visibilityTrait = (superClass) =>
 
     async isCommentBannedForViewer(commentId, viewerId = null) {
       const m = await this.areCommentsBannedForViewerAssoc([commentId], viewerId);
-      return m[commentId] ?? false;
+      return m.get(commentId) ?? null;
     }
 
     async areCommentsBannedForViewerAssoc(commentIds, viewerId = null) {
@@ -194,15 +197,22 @@ const visibilityTrait = (superClass) =>
           `,
         { commentIds },
       );
-      const result = {};
+      const result = new Map();
 
       for (const row of rows) {
+        const s = [];
+
         if (row.banned_by_viewer) {
-          result[row.uid] = Comment.HIDDEN_AUTHOR_BANNED;
-        } else if (row.banned_by_author) {
-          result[row.uid] = Comment.HIDDEN_VIEWER_BANNED;
-        } else {
-          result[row.uid] = false;
+          // Always first, when present
+          s.push(Comment.HIDDEN_AUTHOR_BANNED);
+        }
+
+        if (row.banned_by_author) {
+          s.push(Comment.HIDDEN_VIEWER_BANNED);
+        }
+
+        if (s.length > 0) {
+          result.set(row.uid, s);
         }
       }
 
@@ -319,8 +329,9 @@ const visibilityTrait = (superClass) =>
           List.union(
             // All who banned comment author, except those who disabled bans
             List.difference(authorBannedBy, allWhoDisabledBans),
-            // All banned by comment author, except ADMINS who disabled bans
-            List.difference(bannedByAuthor, adminsWhoDisabledBans),
+            // All banned by comment author, except ADMINS who disabled bans and
+            // the post author
+            List.difference(bannedByAuthor, List.union(adminsWhoDisabledBans, [postAuthor])),
           ),
         ),
       );

@@ -26,7 +26,7 @@ describe('CommentsController', () => {
     let context = {};
     beforeEach(async () => {
       context = await funcTestHelper.createUserAsync('Luna', 'password');
-      context.post = await funcTestHelper.createAndReturnPost(context, 'Post body');
+      context.post = await funcTestHelper.justCreatePost(context, 'Post body');
     });
 
     describe('in a group', () => {
@@ -154,7 +154,7 @@ describe('CommentsController', () => {
 
       beforeEach(async () => {
         mars = await funcTestHelper.createUserAsync('Mars', 'password');
-        postOfMars = await funcTestHelper.createAndReturnPost(mars, 'I am mars!');
+        postOfMars = await funcTestHelper.justCreatePost(mars, 'I am mars!');
         await funcTestHelper.banUser(context, mars);
       });
 
@@ -181,11 +181,8 @@ describe('CommentsController', () => {
         funcTestHelper.createUserAsync('yole', 'pw'),
       ]);
 
-      const post = await funcTestHelper.createAndReturnPost(lunaContext, 'post body');
-      const response = await funcTestHelper.createCommentAsync(lunaContext, post.id, 'comment');
-      const commentData = await response.json();
-
-      comment = commentData.comments;
+      const post = await funcTestHelper.justCreatePost(lunaContext, 'post body');
+      comment = await funcTestHelper.justCreateComment(lunaContext, post.id, 'comment');
     });
 
     it('should update a comment with a valid user', (done) => {
@@ -258,33 +255,39 @@ describe('CommentsController', () => {
       ]);
 
       const [lunaPost, marsPost] = await Promise.all([
-        funcTestHelper.createAndReturnPost(lunaContext, 'Post body 1'),
-        funcTestHelper.createAndReturnPost(marsContext, 'Post body 2'),
+        funcTestHelper.justCreatePost(lunaContext, 'Post body 1'),
+        funcTestHelper.justCreatePost(marsContext, 'Post body 2'),
       ]);
 
-      let response = await funcTestHelper.createCommentAsync(
+      ({ id: lunaPostLunaComment } = await funcTestHelper.justCreateComment(
         lunaContext,
         lunaPost.id,
         'Comment 1-1',
-      );
-      let data = await response.json();
-      lunaPostLunaComment = data.comments.id;
+      ));
 
-      response = await funcTestHelper.createCommentAsync(marsContext, lunaPost.id, 'Comment 1-2');
-      data = await response.json();
-      lunaPostMarsComment = data.comments.id;
+      ({ id: lunaPostMarsComment } = await funcTestHelper.justCreateComment(
+        marsContext,
+        lunaPost.id,
+        'Comment 1-2',
+      ));
 
-      response = await funcTestHelper.createCommentAsync(marsContext, marsPost.id, 'Comment 2-1');
-      data = await response.json();
-      marsPostMarsComment = data.comments.id;
+      ({ id: marsPostMarsComment } = await funcTestHelper.justCreateComment(
+        marsContext,
+        marsPost.id,
+        'Comment 2-1',
+      ));
 
-      response = await funcTestHelper.createCommentAsync(lunaContext, marsPost.id, 'Comment 2-2');
-      data = await response.json();
-      marsPostLunaComment = data.comments.id;
+      ({ id: marsPostLunaComment } = await funcTestHelper.justCreateComment(
+        lunaContext,
+        marsPost.id,
+        'Comment 2-2',
+      ));
 
-      response = await funcTestHelper.createCommentAsync(ceresContext, marsPost.id, 'Comment 2-3');
-      data = await response.json();
-      marsPostCeresComment = data.comments.id;
+      ({ id: marsPostCeresComment } = await funcTestHelper.justCreateComment(
+        ceresContext,
+        marsPost.id,
+        'Comment 2-3',
+      ));
     });
 
     it('should remove comment (your own comment in your own post)', async () => {
@@ -330,19 +333,17 @@ describe('CommentsController', () => {
     let luna, mars, venus, postId, commentIds;
     beforeEach(async () => {
       [luna, mars, venus] = await funcTestHelper.createTestUsers(['luna', 'mars', 'venus']);
-      ({ id: postId } = await funcTestHelper.createAndReturnPost(luna, 'post'));
+      ({ id: postId } = await funcTestHelper.justCreatePost(luna, 'post'));
       commentIds = [];
 
       for (let i = 0; i < 3; i++) {
         // eslint-disable-next-line no-await-in-loop
-        const resp = await funcTestHelper.createCommentAsync(
+        const data = await funcTestHelper.justCreateComment(
           [luna, mars, luna][i],
           postId,
           `Comment ${i + 1}`,
         );
-        // eslint-disable-next-line no-await-in-loop
-        const data = await resp.json();
-        commentIds.push(data.comments.id);
+        commentIds.push(data.id);
       }
     });
 
@@ -572,25 +573,15 @@ describe('CommentsController', () => {
     const nComments = 10;
     let luna, mars, venus, comments;
     beforeEach(async () => {
-      luna = await funcTestHelper.createUserAsync('luna', 'password');
-      mars = await funcTestHelper.createUserAsync('mars', 'password');
-      venus = await funcTestHelper.createUserAsync('venus', 'password');
-      const post = await funcTestHelper.createAndReturnPost(venus, 'Post body');
+      [luna, mars, venus] = await funcTestHelper.createTestUsers(['luna', 'mars', 'venus']);
+      const post = await funcTestHelper.justCreatePost(venus, 'Post body');
 
       comments = [];
 
       for (let n = 0; n < nComments; n++) {
         comments.push(
-          // eslint-disable-next-line prettier/prettier
-          (
-            // eslint-disable-next-line no-await-in-loop
-            await funcTestHelper.performJSONRequest(
-              'POST',
-              `/v2/comments`,
-              { comment: { body: 'Comment', postId: post.id } },
-              funcTestHelper.authHeaders(n % 2 == 0 ? luna : mars),
-            )
-          ).comments,
+          // eslint-disable-next-line no-await-in-loop
+          await funcTestHelper.justCreateComment(n % 2 == 0 ? luna : mars, post.id, 'Comment'),
         );
       }
 

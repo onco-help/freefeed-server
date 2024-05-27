@@ -10,10 +10,11 @@ import socketIO from 'socket.io-client';
 import expect from 'unexpected';
 import Application from 'koa';
 
-import { dbAdapter, sessionTokenV1Store, User } from '../../app/models';
+import { dbAdapter, sessionTokenV1Store, User, Group } from '../../app/models';
 import { getSingleton as initApp } from '../../app/app';
 import { addMailListener } from '../../lib/mailer';
 import { API_VERSION_ACTUAL } from '../../app/api-versions';
+import { createPost as iCreatePost } from '../integration/helpers/posts-and-comments';
 
 import * as schema from './schemaV2-helper';
 
@@ -21,57 +22,6 @@ const apiUrl = async (relativeUrl) => {
   const app = await initApp();
   return `${app.context.config.host}${relativeUrl}`;
 };
-
-export function createUser(username, password, attributes, callback) {
-  return function (done) {
-    if (typeof attributes === 'function') {
-      callback = attributes;
-      attributes = {};
-    }
-
-    if (typeof attributes === 'undefined') {
-      attributes = {};
-    }
-
-    const user = {
-      username,
-      password,
-    };
-
-    if (attributes.email) {
-      user.email = attributes.email;
-    }
-
-    apiUrl('/v1/users')
-      .then((url) => {
-        request
-          .post(url)
-          .send(user)
-          .end((err, res) => {
-            if (callback) {
-              const luna = res.body.users;
-              luna.password = user.password;
-              callback(res.body.authToken, luna);
-            }
-
-            done();
-          });
-      })
-      .catch((e) => {
-        done(e);
-      });
-  };
-}
-
-export function createUserCtx(context, username, password, attrs) {
-  return createUser(username, password, attrs, (token, user) => {
-    context.user = user;
-    context.authToken = token;
-    context.username = username.toLowerCase();
-    context.password = password;
-    context.attributes = attrs;
-  });
-}
 
 export function subscribeToCtx(context, username) {
   return function (done) {
@@ -158,6 +108,42 @@ export async function getSummary(context, params = {}) {
   });
 
   return await response.json();
+}
+
+// The just* functions create objects using the model API (without HTTP
+// requests) and without any checks. Use them to speed up test setup (for
+// example, in beforeEach) when object creation is not the purpose of the test.
+
+export async function justCreatePost(authorCtx, body, destNames = [authorCtx.username]) {
+  const destAccounts = await dbAdapter.getFeedOwnersByUsernames(destNames);
+  return await iCreatePost(authorCtx.user, body, destAccounts);
+}
+
+export async function justCreateComment(authorCtx, postId, body) {
+  const comment = authorCtx.user.newComment({ body, postId });
+  await comment.create();
+  return comment;
+}
+
+export async function justCreateGroup(
+  creatorCtx,
+  username,
+  screenName = username,
+  { isPrivate = false, isProtected = isPrivate, isRestricted = false } = {},
+) {
+  const g = new Group({
+    username,
+    screenName,
+    isPrivate: isPrivate ? '1' : '0',
+    isProtected: isProtected ? '1' : '0',
+    isRestricted: isRestricted ? '1' : '0',
+  });
+  await g.create(creatorCtx.user.id);
+  return g;
+}
+
+export async function justLikeComment(commentObj, userCtx) {
+  await commentObj.addLike(userCtx.user);
 }
 
 export function createPost(context, body, callback) {
@@ -593,8 +579,19 @@ export function groupToProtected(group, userContext) {
   return updateGroupAsync(group, userContext, { isPrivate: '0', isProtected: '1' });
 }
 
-export function subscribeToAsync(subscriber, victim) {
-  return postJson(`/v1/users/${victim.username}/subscribe`, { authToken: subscriber.authToken });
+export async function subscribeToAsync(subscriber, victim) {
+  let victimObj;
+
+  if (victim instanceof User) {
+    victimObj = victim;
+  } else if (victim.user) {
+    victimObj = victim.user;
+  } else {
+    // Old-fashion group or user context
+    victimObj = await dbAdapter.getFeedOwnerById(victim.id ?? victim.group.id);
+  }
+
+  await subscriber.user.subscribeTo(victimObj);
 }
 
 export function unsubscribeFromAsync(unsubscriber, victim) {
@@ -628,7 +625,7 @@ export async function mutualSubscriptions(userContexts) {
         continue;
       }
 
-      promises.push(subscribeToAsync(ctx1, ctx2));
+      promises.push(ctx1.user.subscribeTo(ctx2.user));
     }
   }
 

@@ -23,7 +23,7 @@ describe('PrivateGroups', () => {
     let context = {};
 
     beforeEach(async () => {
-      context = await funcTestHelper.createUserAsync('Luna', 'password');
+      context = await funcTestHelper.createTestUser('luna');
     });
 
     it('should create a public not-restricted group by default', (done) => {
@@ -151,15 +151,12 @@ describe('PrivateGroups', () => {
     let group = {};
 
     beforeEach(async () => {
-      [adminContext, nonAdminContext] = await Promise.all([
-        funcTestHelper.createUserAsync('Luna', 'password'),
-        funcTestHelper.createUserAsync('yole', 'wordpass'),
-      ]);
-      group = await funcTestHelper.createGroupAsync(
+      [adminContext, nonAdminContext] = await funcTestHelper.createTestUsers(['Luna', 'yole']);
+      group = await funcTestHelper.justCreateGroup(
         adminContext,
         'pepyatka-dev',
         'Pepyatka Developers',
-        true,
+        { private: true },
       );
     });
 
@@ -177,22 +174,14 @@ describe('PrivateGroups', () => {
   });
 
   describe('#update', () => {
-    const context = {};
+    let context;
     let group;
 
-    beforeEach(funcTestHelper.createUserCtx(context, 'Luna', 'password'));
-
-    beforeEach((done) => {
-      request
-        .post(`${app.context.config.host}/v1/groups`)
-        .send({
-          group: { username: 'pepyatka-dev', screenName: 'Pepyatka Developers', isPrivate: '1' },
-          authToken: context.authToken,
-        })
-        .end((err, res) => {
-          group = res.body.groups;
-          done();
-        });
+    beforeEach(async () => {
+      context = await funcTestHelper.createTestUser('luna');
+      group = await funcTestHelper.justCreateGroup(context, 'pepyatka-dev', 'pepyatka-dev', {
+        isPrivate: true,
+      });
     });
 
     it('should update private group settings', (done) => {
@@ -296,22 +285,13 @@ describe('PrivateGroups', () => {
   });
 
   describe('#unadmin', () => {
-    const adminContext = {};
-    const nonAdminContext = {};
+    let adminContext;
 
-    beforeEach(funcTestHelper.createUserCtx(adminContext, 'Luna', 'password'));
-    beforeEach(funcTestHelper.createUserCtx(nonAdminContext, 'yole', 'wordpass'));
-
-    beforeEach((done) => {
-      request
-        .post(`${app.context.config.host}/v1/groups`)
-        .send({
-          group: { username: 'pepyatka-dev', screenName: 'Pepyatka Developers', isPrivate: '1' },
-          authToken: adminContext.authToken,
-        })
-        .end(() => {
-          done();
-        });
+    beforeEach(async () => {
+      [adminContext] = await funcTestHelper.createTestUsers(['luna', 'yole']);
+      await funcTestHelper.justCreateGroup(adminContext, 'pepyatka-dev', 'pepyatka-dev', {
+        isPrivate: true,
+      });
     });
 
     beforeEach((done) => {
@@ -340,18 +320,10 @@ describe('PrivateGroups', () => {
     let group;
 
     beforeEach(async () => {
-      [adminContext, nonAdminContext] = await Promise.all([
-        funcTestHelper.createUserAsync('Luna', 'password'),
-        funcTestHelper.createUserAsync('yole', 'wordpass'),
-      ]);
-
-      const response = await funcTestHelper.createGroupAsync(
-        adminContext,
-        'pepyatka-dev',
-        'Pepyatka Developers',
-        true,
-      );
-      ({ group } = response);
+      [adminContext, nonAdminContext] = await funcTestHelper.createTestUsers(['Luna', 'yole']);
+      group = await funcTestHelper.justCreateGroup(adminContext, 'pepyatka-dev', 'pepyatka-dev', {
+        isPrivate: true,
+      });
     });
 
     it('should reject unauthenticated users', (done) => {
@@ -464,19 +436,9 @@ describe('PrivateGroups', () => {
     let group;
 
     beforeEach(async () => {
-      [adminContext, secondAdminContext, nonAdminContext, groupMemberContext] = await Promise.all([
-        funcTestHelper.createUserAsync('Luna', 'password'),
-        funcTestHelper.createUserAsync('Neptune', 'password'),
-        funcTestHelper.createUserAsync('yole', 'wordpass'),
-        funcTestHelper.createUserAsync('Pluto', 'wordpass'),
-      ]);
-
-      const response = await funcTestHelper.createGroupAsync(
-        adminContext,
-        'pepyatka-dev',
-        'Pepyatka Developers',
-      );
-      ({ group } = response);
+      [adminContext, secondAdminContext, nonAdminContext, groupMemberContext] =
+        await funcTestHelper.createTestUsers(['Luna', 'Neptune', 'yole', 'Pluto']);
+      group = await funcTestHelper.justCreateGroup(adminContext, 'pepyatka-dev');
 
       await Promise.all([
         funcTestHelper.subscribeToAsync(secondAdminContext, group),
@@ -486,7 +448,7 @@ describe('PrivateGroups', () => {
       await funcTestHelper.promoteToAdmin(group, adminContext, secondAdminContext);
       await funcTestHelper.groupToPrivate(group, adminContext);
 
-      await funcTestHelper.createAndReturnPostToFeed(group, adminContext, 'Post body');
+      await funcTestHelper.justCreatePost(adminContext, 'Post body', [group.username]);
 
       await funcTestHelper.sendRequestToJoinGroup(nonAdminContext, group);
     });
@@ -1077,24 +1039,19 @@ describe('PrivateGroups', () => {
     let group;
 
     beforeEach(async () => {
-      [adminContext, marsContext, plutoContext] = await Promise.all([
-        funcTestHelper.createUserAsync('Luna', 'password'),
-        funcTestHelper.createUserAsync('Mars', 'wordpass'),
-        funcTestHelper.createUserAsync('Pluto', 'wordpass'),
+      [adminContext, marsContext, plutoContext] = await funcTestHelper.createTestUsers([
+        'Luna',
+        'Mars',
+        'Pluto',
       ]);
 
-      const response = await funcTestHelper.createGroupAsync(
-        adminContext,
-        'pepyatka-dev',
-        'Pepyatka Developers',
-      );
-      ({ group } = response);
+      group = await funcTestHelper.justCreateGroup(adminContext, 'pepyatka-dev');
 
       await funcTestHelper.subscribeToAsync(plutoContext, group);
 
       await funcTestHelper.groupToPrivate(group, adminContext);
 
-      await funcTestHelper.createAndReturnPostToFeed(group, adminContext, 'Post body');
+      await funcTestHelper.justCreatePost(adminContext, 'Post body', [group.username]);
     });
 
     it('anonymous users should have no access to private group subscribers', async () => {
@@ -1125,34 +1082,25 @@ describe('PrivateGroups', () => {
     let nonMemberContext = {};
 
     beforeEach(async () => {
-      [adminContext, nonAdminContext, nonMemberContext] = await Promise.all([
-        funcTestHelper.createUserAsync('Luna', 'password'),
-        funcTestHelper.createUserAsync('yole', 'wordpass'),
-        funcTestHelper.createUserAsync('Pluto', 'wordpass'),
+      [adminContext, nonAdminContext, nonMemberContext] = await funcTestHelper.createTestUsers([
+        'Luna',
+        'yole',
+        'Pluto',
       ]);
 
       const [group1, group2, group3] = await Promise.all([
-        funcTestHelper.createGroupAsync(
-          adminContext,
-          'pepyatka-dev',
-          'Pepyatka Developers',
-          true,
-          true,
-        ),
-        funcTestHelper.createGroupAsync(
-          adminContext,
-          'pepyatka-dev-2',
-          'Pepyatka Developers 2',
-          true,
-          false,
-        ),
-        funcTestHelper.createGroupAsync(
-          adminContext,
-          'pepyatka-dev-3',
-          'Pepyatka Developers 3',
-          false,
-          true,
-        ),
+        funcTestHelper.justCreateGroup(adminContext, 'pepyatka-dev', 'Pepyatka Developers', {
+          isPrivate: true,
+          isRestricted: true,
+        }),
+        funcTestHelper.justCreateGroup(adminContext, 'pepyatka-dev-2', 'Pepyatka Developers 2', {
+          isPrivate: true,
+          isRestricted: false,
+        }),
+        funcTestHelper.justCreateGroup(adminContext, 'pepyatka-dev-3', 'Pepyatka Developers 3', {
+          isPrivate: false,
+          isRestricted: true,
+        }),
       ]);
 
       await Promise.all([

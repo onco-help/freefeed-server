@@ -1,4 +1,5 @@
-import { User } from '../../app/models';
+import { Comment, Group, Post, User } from '../../app/models';
+import { UUID } from '../../app/support/types';
 
 export type UserCtx = {
   authToken: string;
@@ -28,3 +29,24 @@ export function authHeaders(userCtx: Pick<UserCtx, 'authToken'> | null): {
 };
 
 export function cmpBy<T>(key: keyof T): (a: T, b: T) => number;
+
+export function justCreatePost(
+  authorCtx: UserCtx,
+  body: string,
+  destNames?: string[],
+): Promise<Post>;
+
+export function justCreateComment(authorCtx: UserCtx, postId: UUID, body: string): Promise<Comment>;
+
+export function justCreateGroup(
+  creatorCtx: UserCtx,
+  username: string,
+  screenName?: string,
+  opts?: {
+    isPrivate?: boolean;
+    isProtected?: boolean;
+    isRestricted?: boolean;
+  },
+): Promise<Group>;
+
+export function justLikeComment(commentObj: Comment, userCtx: UserCtx): Promise<void>;

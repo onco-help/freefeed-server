@@ -15,13 +15,21 @@ export async function serializeComment(comment, viewerId) {
   return { comments, users, admins: users };
 }
 
-export async function serializeCommentFull(comment, viewerId) {
-  const res = await serializeCommentsFull([comment], viewerId);
+export async function serializeCommentFull(
+  comment,
+  viewerId,
+  { unlockBannedComments = false } = {},
+) {
+  const res = await serializeCommentsFull([comment], viewerId, { unlockBannedComments });
   [res.comments] = res.comments;
   return res;
 }
 
-export async function serializeCommentsFull(comments, viewerId) {
+export async function serializeCommentsFull(
+  comments,
+  viewerId,
+  { unlockBannedComments = false } = {},
+) {
   const commentIds = comments.map((c) => c.id);
   const [bansMap, likesInfo] = await Promise.all([
     dbAdapter.areCommentsBannedForViewerAssoc(commentIds, viewerId),
@@ -42,27 +50,37 @@ export async function serializeCommentsFull(comments, viewerId) {
         'hideType',
       ]),
       createdBy: comment.userId,
+      likes: 0,
+      hasOwnLike: false,
     };
 
-    if (
-      bansMap[comment.id] === Comment.HIDDEN_AUTHOR_BANNED ||
-      bansMap[comment.id] === Comment.HIDDEN_VIEWER_BANNED
-    ) {
-      ser.likes = 0;
-      ser.hasOwnLike = false;
+    const banTypes = bansMap.get(comment.id);
 
-      ser.hideType = bansMap[comment.id];
-      ser.body = Comment.hiddenBody(ser.hideType);
-      ser.createdBy = null;
-    } else {
+    if (banTypes) {
+      const filteredTypes = unlockBannedComments
+        ? banTypes.filter((t) => t !== Comment.HIDDEN_AUTHOR_BANNED)
+        : banTypes;
+
+      const [hideType] = filteredTypes;
+
+      if (hideType) {
+        ser.hideType = hideType;
+        ser.body = Comment.hiddenBody(ser.hideType);
+        ser.createdBy = null;
+      }
+    }
+
+    // Fill likes only for the truly visible comments
+    if (!banTypes) {
       const commentLikesData = likesInfo.find((it) => it.uid === comment.id) ?? {
         c_likes: '0',
         has_own_like: false,
       };
       ser.likes = parseInt(commentLikesData.c_likes);
       ser.hasOwnLike = commentLikesData.has_own_like;
-      userIds.add(comment.userId);
     }
+
+    ser.createdBy && userIds.add(ser.createdBy);
 
     return ser;
   });
