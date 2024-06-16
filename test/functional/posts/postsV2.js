@@ -30,6 +30,7 @@ import {
   justCreateComment,
 } from '../functional_test_helper';
 import { postsByIdsResponse } from '../schemaV2-helper';
+import { API_VERSION_2, API_VERSION_3 } from '../../../app/api-versions';
 
 describe('TimelinesControllerV2', () => {
   let app;
@@ -52,46 +53,82 @@ describe('TimelinesControllerV2', () => {
         await mutualSubscriptions([luna, mars]);
       });
 
+      async function expectCommentsFolding(
+        nComments,
+        expComments,
+        expOmitted,
+        allComments = false,
+        apiVersion = API_VERSION_2,
+      ) {
+        const promises = [];
+
+        for (let n = 0; n < nComments; n++) {
+          promises.push(justCreateComment(luna, lunaPost.id, `Comment ${n + 1}`));
+        }
+
+        await Promise.all(promises);
+
+        const post = await fetchPost(lunaPost.id, null, { allComments, apiVersion });
+        expect(post.posts.comments, 'to have length', expComments);
+        expect(post.posts.omittedComments, 'to equal', expOmitted);
+        expect(post.posts.omittedCommentsOffset, 'to equal', expOmitted > 0 ? 1 : 0);
+      }
+
       describe('Comments folding test', () => {
-        const expectFolding = async (nComments, expComments, expOmitted, allComments = false) => {
-          const promises = [];
-
-          for (let n = 0; n < nComments; n++) {
-            promises.push(justCreateComment(luna, lunaPost.id, `Comment ${n + 1}`));
-          }
-
-          await Promise.all(promises);
-
-          const post = await fetchPost(lunaPost.id, null, { allComments });
-          expect(post.posts.comments, 'to have length', expComments);
-          expect(post.posts.omittedComments, 'to equal', expOmitted);
-          expect(post.posts.omittedCommentsOffset, 'to equal', expOmitted > 0 ? 1 : 0);
-        };
-
         describe('Folded comments', () => {
           it('should return post with 1 comment without folding', async () =>
-            await expectFolding(1, 1, 0));
+            await expectCommentsFolding(1, 1, 0));
           it('should return post with 2 comments without folding', async () =>
-            await expectFolding(2, 2, 0));
+            await expectCommentsFolding(2, 2, 0));
           it('should return post with 3 comments without folding', async () =>
-            await expectFolding(3, 3, 0));
+            await expectCommentsFolding(3, 3, 0));
           it('should return post with 4 comments with folding', async () =>
-            await expectFolding(4, 2, 2));
+            await expectCommentsFolding(4, 2, 2));
           it('should return post with 5 comments with folding', async () =>
-            await expectFolding(5, 2, 3));
+            await expectCommentsFolding(5, 2, 3));
         });
 
         describe('Unfolded comments', () => {
           it('should return post with 1 comment without folding', async () =>
-            await expectFolding(1, 1, 0, true));
+            await expectCommentsFolding(1, 1, 0, true));
           it('should return post with 2 comments without folding', async () =>
-            await expectFolding(2, 2, 0, true));
+            await expectCommentsFolding(2, 2, 0, true));
           it('should return post with 3 comments without folding', async () =>
-            await expectFolding(3, 3, 0, true));
+            await expectCommentsFolding(3, 3, 0, true));
           it('should return post with 4 comments without folding', async () =>
-            await expectFolding(4, 4, 0, true));
+            await expectCommentsFolding(4, 4, 0, true));
           it('should return post with 5 comments without folding', async () =>
-            await expectFolding(5, 5, 0, true));
+            await expectCommentsFolding(5, 5, 0, true));
+        });
+      });
+
+      describe(`Comments folding test (v${API_VERSION_3})`, () => {
+        describe('Folded comments', () => {
+          it('should return post with 1 comment without folding', async () =>
+            await expectCommentsFolding(1, 1, 0, false, API_VERSION_3));
+          it('should return post with 2 comments without folding', async () =>
+            await expectCommentsFolding(2, 2, 0, false, API_VERSION_3));
+          it('should return post with 3 comments without folding', async () =>
+            await expectCommentsFolding(3, 3, 0, false, API_VERSION_3));
+          it('should return post with 4 comments without folding', async () =>
+            await expectCommentsFolding(4, 4, 0, false, API_VERSION_3));
+          it('should return post with 5 comments with folding', async () =>
+            await expectCommentsFolding(5, 3, 2, false, API_VERSION_3));
+          it('should return post with 6 comments with folding', async () =>
+            await expectCommentsFolding(6, 3, 3, false, API_VERSION_3));
+        });
+
+        describe('Unfolded comments', () => {
+          it('should return post with 1 comment without folding', async () =>
+            await expectCommentsFolding(1, 1, 0, true, API_VERSION_3));
+          it('should return post with 2 comments without folding', async () =>
+            await expectCommentsFolding(2, 2, 0, true, API_VERSION_3));
+          it('should return post with 3 comments without folding', async () =>
+            await expectCommentsFolding(3, 3, 0, true, API_VERSION_3));
+          it('should return post with 4 comments without folding', async () =>
+            await expectCommentsFolding(4, 4, 0, true, API_VERSION_3));
+          it('should return post with 5 comments without folding', async () =>
+            await expectCommentsFolding(5, 5, 0, true, API_VERSION_3));
         });
       });
 

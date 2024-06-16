@@ -222,11 +222,11 @@ async function postItemMaker(postId, data, ctx) {
 }
 
 async function loadAllComments(postId, ctx) {
-  const { user: viewer } = ctx.state;
+  const { user: viewer, apiVersion } = ctx.state;
   const [postWithStuff] = await dbAdapter.getPostsWithStuffByIds(
     [postId],
     viewer ? viewer.id : null,
-    { foldComments: false },
+    { foldComments: false, apiVersion },
   );
 
   return postWithStuff ? postWithStuff.comments.map((c) => serializeComment(c)) : [];

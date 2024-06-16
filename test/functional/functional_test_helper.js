@@ -13,7 +13,7 @@ import Application from 'koa';
 import { dbAdapter, sessionTokenV1Store, User, Group } from '../../app/models';
 import { getSingleton as initApp } from '../../app/app';
 import { addMailListener } from '../../lib/mailer';
-import { API_VERSION_ACTUAL } from '../../app/api-versions';
+import { API_VERSION_2, API_VERSION_3, API_VERSION_ACTUAL } from '../../app/api-versions';
 import { createPost as iCreatePost } from '../integration/helpers/posts-and-comments';
 
 import * as schema from './schemaV2-helper';
@@ -1032,7 +1032,7 @@ export async function fetchPost(postId, viewerContext = null, params = {}) {
     returnError: false,
     allComments: false,
     allLikes: false,
-    apiVersion: 'v2',
+    apiVersion: API_VERSION_2,
     ...params,
   };
   const headers = {};
@@ -1043,7 +1043,7 @@ export async function fetchPost(postId, viewerContext = null, params = {}) {
 
   const response = await fetch(
     await apiUrl(
-      `/${params.apiVersion}/posts/${postId}?maxComments=${
+      `/v${params.apiVersion}/posts/${postId}?maxComments=${
         params.allComments ? 'all' : ''
       }&maxLikes=${params.allLikes ? 'all' : ''}`,
     ),
@@ -1059,7 +1059,7 @@ export async function fetchPost(postId, viewerContext = null, params = {}) {
     expect.fail('HTTP error (code {0}): {1}', response.status, post.err);
   }
 
-  if (params.apiVersion === 'v2') {
+  if (params.apiVersion === API_VERSION_2 || params.apiVersion === API_VERSION_3) {
     expect(post, 'to exhaustively satisfy', schema.postResponse);
   }
 

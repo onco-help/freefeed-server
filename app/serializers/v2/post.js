@@ -71,7 +71,7 @@ export async function serializeFeed(
   postIds,
   viewerId,
   timeline = null,
-  { isLastPage = false, foldComments = true, foldLikes = true } = {},
+  { isLastPage = false, foldComments = true, foldLikes = true, apiVersion } = {},
 ) {
   const canViewTimeline = timeline ? await timeline.canShow(viewerId) : true;
 
@@ -94,6 +94,7 @@ export async function serializeFeed(
     hiddenCommentTypes,
     foldComments,
     foldLikes,
+    apiVersion,
   });
 
   const { notifyOfCommentsOnMyPosts = false, notifyOfCommentsOnCommentedPosts = false } =
@@ -218,9 +219,13 @@ export async function serializeFeed(
 export async function serializeSinglePost(
   postId,
   viewerId = null,
-  { foldComments = true, foldLikes = true } = {},
+  { foldComments = true, foldLikes = true, apiVersion } = {},
 ) {
-  const data = await serializeFeed([postId], viewerId, null, { foldComments, foldLikes });
+  const data = await serializeFeed([postId], viewerId, null, {
+    foldComments,
+    foldLikes,
+    apiVersion,
+  });
   [data.posts] = data.posts;
   Reflect.deleteProperty(data, 'timelines');
   Reflect.deleteProperty(data, 'admins');
