@@ -5,6 +5,21 @@ All backward-incompatible FreeFeed API changes will be documented in this file.
 See the [About API versions](#about-api-versions) section in the end of this
 file for the general versioning information.
 
+## [3] - 2024-06-21
+
+### Changed
+- Serialized posts now contains the _omittedCommentsOffset_ field. If post
+  contains some omitted comments, this field contains the offset of omitted part
+  in the _comments_ array. Client must use the _omitCommentsOffset_ field to
+  determine, which of the _comments_ are before and after the omitted part.
+
+  It is a broken change because in V2 API responses, when some comments are
+  omitted, the _comments_ array always has two items. The V2 clients treats the
+  _comments_ array as [beforeOmitted, afterOmitted].
+
+  In the V3 API response, the _comments_ array can have more than two items, and
+  the _omittedCommentsOffset_ can have values other than '1'.
+
 ## [2] - 2022-11-01
 
 This is the initial API version (it is "2" instead of "1" for historical
