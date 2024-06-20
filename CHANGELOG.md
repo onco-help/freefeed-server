@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [2.21.0] - Not released
+### Added
+- New API endpoint `GET /v2/users/sparseMatches?qs=...` to get list of
+  non-private users and groups, whose username _sparse matches_ the query
+  string. The sparse match means that the username must contain all the query
+  string letters in the given order, but with possible other letters in between.
+  For example, the 'ur[an]us', '[an]tenna', 's[a]tur[n]' matches the "an" query.
+
+  The query string should match the `[a-z0-9-]{2,}` regex.
+
+  The order of the results is not specified, the client should sort them at
+  their side.
 
 ## [2.20.0] - 2024-05-27
 #### Changed

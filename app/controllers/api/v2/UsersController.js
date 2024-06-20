@@ -222,4 +222,22 @@ export default class UsersController {
       };
     },
   ]);
+
+  static sparseMatches = compose([
+    authRequired(),
+    async (ctx) => {
+      const { user } = ctx.state;
+      const qs = (ctx.request.query.qs ?? '').toLowerCase();
+
+      if (!/^[a-z0-9-]{2,}$/.test(qs)) {
+        ctx.status = 400;
+        throw new ValidationException('Invalid query string, expected: [a-z0-9-]{2,}');
+      }
+
+      const userIds = await dbAdapter.sparseMatchesUserIds(qs);
+      const users = await serializeUsersByIds(userIds, user.id);
+
+      ctx.body = { users };
+    },
+  ]);
 }
