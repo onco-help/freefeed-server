@@ -9,7 +9,7 @@ import expect from 'unexpected';
 import { getSingleton } from '../../app/app';
 import { version as serverVersion } from '../../package.json';
 import cleanDB from '../dbCleaner';
-import { API_VERSION_ACTUAL, API_VERSION_MINIMAL } from '../../app/api-versions';
+import { API_VERSION_2, API_VERSION_ACTUAL, API_VERSION_MINIMAL } from '../../app/api-versions';
 
 import { createTestUser, updateUserAsync } from './functional_test_helper';
 
@@ -24,7 +24,7 @@ describe('Common API routing', () => {
     const resp = await fetch(`${app.context.config.host}/v2/users/whoami`);
     expect(resp.status, 'to be', 401);
     expect(resp.headers.get('X-Freefeed-Server'), 'to be', serverVersion);
-    expect(resp.headers.get('Freefeed-API-Version'), 'to be', API_VERSION_ACTUAL.toString(10));
+    expect(resp.headers.get('Freefeed-API-Version'), 'to be', API_VERSION_2.toString(10));
     expect(resp.headers.get('Access-Control-Expose-Headers'), 'to contain', 'X-Freefeed-Server');
     expect(resp.headers.get('Access-Control-Expose-Headers'), 'to contain', 'Freefeed-API-Version');
     expect(resp.headers.get('Access-Control-Expose-Headers'), 'to contain', 'Date');

@@ -222,6 +222,7 @@ const postBasic = {
     .and('to be empty')
     .or('to have items satisfying', 'to be UUID'),
   omittedComments: expect.it('to be a number'),
+  omittedCommentsOffset: expect.it('to be a number'),
   omittedLikes: expect.it('to be a number'),
   commentLikes: expect.it('to be a number'),
   ownCommentLikes: expect.it('to be a number'),

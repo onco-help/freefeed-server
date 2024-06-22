@@ -19,7 +19,7 @@ export const generalSummary = compose([
     const days = getDays(ctx.params.days);
     const limit = parseInt(ctx.request.query.limit, 10) || null;
 
-    const currentUser = ctx.state.user;
+    const { user: currentUser, apiVersion } = ctx.state;
 
     let destinations = [];
     let activities = [];
@@ -37,7 +37,10 @@ export const generalSummary = compose([
       limit,
     );
 
-    ctx.body = await serializeFeed(foundPostsIds, currentUser.id, null, { isLastPage: true });
+    ctx.body = await serializeFeed(foundPostsIds, currentUser.id, null, {
+      isLastPage: true,
+      apiVersion,
+    });
   },
 ]);
 
@@ -45,7 +48,7 @@ export const userSummary = compose([
   targetUserRequired(),
   monitored('summary.user'),
   async (ctx) => {
-    const { targetUser } = ctx.state;
+    const { targetUser, apiVersion } = ctx.state;
 
     const days = getDays(ctx.params.days);
 
@@ -57,6 +60,9 @@ export const userSummary = compose([
     // Get posts authored by target user, and provide current user (the reader) for filtering
     const foundPostsIds = await dbAdapter.getSummaryPostsIds(currentUserId, days, [timelineIntId]);
 
-    ctx.body = await serializeFeed(foundPostsIds, currentUserId, null, { isLastPage: true });
+    ctx.body = await serializeFeed(foundPostsIds, currentUserId, null, {
+      isLastPage: true,
+      apiVersion,
+    });
   },
 ]);

@@ -14,9 +14,7 @@ export default class SearchController {
       const DEFAULT_LIMIT = 30;
       const MAX_LIMIT = 120;
 
-      const {
-        state: { user },
-      } = ctx;
+      const { user, apiVersion } = ctx.state;
       const query = (ctx.request.query.qs || '').trim();
       let offset = parseInt(ctx.request.query.offset, 10);
       let limit = parseInt(ctx.request.query.limit, 10);
@@ -48,7 +46,7 @@ export default class SearchController {
         postIds.length = limit;
       }
 
-      ctx.body = await serializeFeed(postIds, user && user.id, null, { isLastPage });
+      ctx.body = await serializeFeed(postIds, user && user.id, null, { isLastPage, apiVersion });
     },
   ]);
 }
