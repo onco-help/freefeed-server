@@ -674,6 +674,13 @@ const usersTrait = (superClass) =>
         { limit, offset, types },
       );
     }
+
+    sparseMatchesUserIds(query) {
+      return this.database.getCol(
+        `select uid from users where username like :query and not is_private`,
+        { query: `%${query.split('').join('%')}%` },
+      );
+    }
   };
 
 export default usersTrait;
