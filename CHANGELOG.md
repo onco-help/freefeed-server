@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.21.0] - Not released
 ### Added
+- The V3 API is now available. The only difference from V2 is:
+  - Serialized posts with omitted comments now have two comments after the
+    omitted part (and this count is defined in server config). They also have a
+    new _omitCommentsOffset_ field, that contains the offset of omitted part in
+    the _comments_ array (which now has three comments if the omitted part is
+    present). Client must use the _omitCommentsOffset_ field to determine, which
+    of the _comments_ are before and after the omitted part.
+
+    It is a broken change because the old clients expects the _comments_ array
+    of a post with omitted comments to always have two comments total.
 - New API endpoint `GET /v2/users/sparseMatches?qs=...` to get list of
   non-private users and groups, whose username _sparse matches_ the query
   string. The sparse match means that the username must contain all the query

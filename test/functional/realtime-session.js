@@ -1,8 +1,6 @@
 import socketIO from 'socket.io-client';
 import socketIOModern from 'socket.io-client-modern';
 
-import { API_VERSION_ACTUAL } from '../../app/api-versions';
-
 const eventTimeout = 2000;
 const silenceTimeout = 500;
 
@@ -19,7 +17,6 @@ export default class Session {
     const options = {
       transports: ['websocket'],
       forceNew: true,
-      query: { apiVersion: API_VERSION_ACTUAL },
       ...extraOptions,
     };
     return new Promise((resolve, reject) => {
@@ -34,7 +31,6 @@ export default class Session {
     const options = {
       transports: ['websocket'],
       forceNew: true,
-      query: { apiVersion: API_VERSION_ACTUAL },
       ...extraOptions,
     };
     return new Promise((resolve, reject) => {

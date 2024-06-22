@@ -68,7 +68,7 @@ describe('Realtime #2', () => {
       expect(resp, 'to equal', {
         success: true,
         userId: luna.user.id,
-        apiVersion: API_VERSION_ACTUAL,
+        apiVersion: API_VERSION_MINIMAL,
         rooms: {},
       });
     });
@@ -95,6 +95,15 @@ describe('Realtime #2', () => {
       });
       const resp = await session.sendAsync('status', null);
       expect(resp, 'to satisfy', { apiVersion: API_VERSION_MINIMAL });
+      await session.disconnect();
+    });
+
+    it(`should return actual API version if it is set`, async () => {
+      const session = await Session.create(port, 'Some session', {
+        query: { apiVersion: API_VERSION_ACTUAL },
+      });
+      const resp = await session.sendAsync('status', null);
+      expect(resp, 'to satisfy', { apiVersion: API_VERSION_ACTUAL });
       await session.disconnect();
     });
 

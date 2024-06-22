@@ -19,12 +19,16 @@ export const show = compose([
   postAccessRequired(true),
   monitored('posts.show-v2'),
   async (ctx) => {
-    const { user: viewer, post } = ctx.state;
+    const { user: viewer, post, apiVersion } = ctx.state;
 
     const foldComments = ctx.request.query.maxComments !== 'all';
     const foldLikes = ctx.request.query.maxLikes !== 'all';
 
-    ctx.body = await serializeSinglePost(post.id, viewer && viewer.id, { foldComments, foldLikes });
+    ctx.body = await serializeSinglePost(post.id, viewer && viewer.id, {
+      foldComments,
+      foldLikes,
+      apiVersion,
+    });
   },
 ]);
 
@@ -108,7 +112,7 @@ export const getByIds = compose([
   inputSchemaRequired(getPostsByIdsInputSchema),
   monitored('posts.by-ids'),
   async (ctx) => {
-    const { user: viewer } = ctx.state;
+    const { user: viewer, apiVersion } = ctx.state;
     const { postIds } = ctx.request.body;
 
     const hasMore = postIds.length > maxPostsByIds;
@@ -122,7 +126,11 @@ export const getByIds = compose([
 
     const visiblePostIds = await dbAdapter.selectPostsVisibleByUser(postIds, viewer?.id);
 
-    ctx.body = await serializeFeed(visiblePostIds, viewer?.id, null, { foldComments, foldLikes });
+    ctx.body = await serializeFeed(visiblePostIds, viewer?.id, null, {
+      foldComments,
+      foldLikes,
+      apiVersion,
+    });
     const postsFound = ctx.body.posts.map((p) => p.id);
     const postsNotFound = difference(postIds, postsFound);
     ctx.body.postsNotFound = postsNotFound;
@@ -154,7 +162,7 @@ export const getReferringPosts = compose([
   monitored('posts.referring'),
   postAccessRequired(true),
   async (ctx) => {
-    const { post, user } = ctx.state;
+    const { post, user, apiVersion } = ctx.state;
 
     const params = getCommonParams(ctx);
     params.limit++;
@@ -166,7 +174,7 @@ export const getReferringPosts = compose([
       foundPostsIds.length = params.limit - 1;
     }
 
-    ctx.body = await serializeFeed(foundPostsIds, user?.id, null, { isLastPage });
+    ctx.body = await serializeFeed(foundPostsIds, user?.id, null, { isLastPage, apiVersion });
   },
 ]);
 
@@ -175,10 +183,10 @@ export const notifyOfAllComments = compose([
   postAccessRequired(),
   inputSchemaRequired(notifyOfAllCommentsInputSchema),
   async (ctx) => {
-    const { post, user } = ctx.state;
+    const { post, user, apiVersion } = ctx.state;
     const { enabled } = ctx.request.body;
 
     await user.notifyOfAllCommentsOfPost(post, enabled);
-    ctx.body = await serializeSinglePost(post.id, user.id);
+    ctx.body = await serializeSinglePost(post.id, user.id, { apiVersion });
   },
 ]);

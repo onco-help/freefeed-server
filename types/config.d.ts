@@ -186,6 +186,14 @@ declare module 'config' {
           limits: TranslationLimits;
           serviceTitle: string;
         } & ({ service: 'test' } | { service: 'google'; apiKey: string }));
+
+    foldingInPosts: {
+      headComments: number;
+      tailComments: number;
+      minOmittedComments: number;
+      headLikes: number;
+      minOmittedLikes: number;
+    };
   };
 
   export type TranslationLimits = {

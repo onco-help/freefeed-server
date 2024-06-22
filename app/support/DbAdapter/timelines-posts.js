@@ -1,8 +1,10 @@
+import config from 'config';
 import _ from 'lodash';
 import pgFormat from 'pg-format';
 
 import { Comment } from '../../models';
 import { List } from '../open-lists';
+import { API_VERSION_2 } from '../../api-versions';
 
 import { COMMENT_FIELDS, initCommentObject } from './comments';
 import { ATTACHMENT_FIELDS, initAttachmentObject } from './attachments';
@@ -274,6 +276,7 @@ const timelinesPostsTrait = (superClass) =>
      *   attachments: <array of Attachment objects>
      *   comments: <array of Comments objects>
      *   omittedComments: <number>
+     *   omittedCommentsOffset: <number>
      *   likes: <array of liker's UIDs>
      *   omittedLikes: <number>
      * }
@@ -286,12 +289,22 @@ const timelinesPostsTrait = (superClass) =>
       params = {
         foldComments: true,
         foldLikes: true,
-        maxUnfoldedComments: 3,
-        maxUnfoldedLikes: 4,
-        visibleFoldedLikes: 3,
         hiddenCommentTypes: [],
+        apiVersion: API_VERSION_2,
         ...params,
       };
+
+      const folding =
+        params.apiVersion === API_VERSION_2
+          ? {
+              // Legacy v2 parameters
+              headComments: 1,
+              tailComments: 1,
+              minOmittedComments: 2,
+              headLikes: 3,
+              minOmittedLikes: 2,
+            }
+          : config.foldingInPosts;
 
       const uniqPostsIds = _.uniq(postsIds);
 
@@ -364,9 +377,9 @@ const timelinesPostsTrait = (superClass) =>
 
       const foldLikesSql = params.foldLikes
         ? pgFormat(
-            `where count <= %L or rank <= %L`,
-            params.maxUnfoldedLikes,
-            params.visibleFoldedLikes,
+            `where count < %L or rank <= %L`,
+            folding.minOmittedLikes + folding.headLikes,
+            folding.headLikes,
           )
         : ``;
       const likesSQL = `
@@ -427,7 +440,12 @@ const timelinesPostsTrait = (superClass) =>
       );
 
       const foldCommentsSql = params.foldComments
-        ? pgFormat(`where count <= %L or rank = 1 or rank = count`, params.maxUnfoldedComments)
+        ? pgFormat(
+            `where count < %L or rank <= %L or rank > count - %L`,
+            folding.minOmittedComments + folding.headComments + folding.tailComments,
+            folding.headComments,
+            folding.tailComments,
+          )
         : ``;
       const commentsSQL = `
       with comments as (${allCommentsSQL})
@@ -454,6 +472,7 @@ const timelinesPostsTrait = (superClass) =>
           attachments: [],
           comments: [],
           omittedComments: 0,
+          omittedCommentsOffset: 0,
           likes: [],
           omittedLikes: 0,
           backlinksCount: backlinks.get(post.uid) || 0,
@@ -501,7 +520,12 @@ const timelinesPostsTrait = (superClass) =>
         comment.hasOwnLike = Boolean(comm.has_own_like);
         results[comm.post_id].comments.push(comment);
         results[comm.post_id].omittedComments =
-          params.foldComments && comm.count > params.maxUnfoldedComments ? comm.count - 2 : 0;
+          params.foldComments &&
+          comm.count >= folding.minOmittedComments + folding.headComments + folding.tailComments
+            ? comm.count - folding.headComments - folding.tailComments
+            : 0;
+        results[comm.post_id].omittedCommentsOffset =
+          results[comm.post_id].omittedComments > 0 ? folding.headComments : 0;
 
         if (params.foldComments && results[comm.post_id].omittedComments > 0) {
           let omittedCLikes = results[comm.post_id].post.hasOwnProperty('omittedCommentLikes')
