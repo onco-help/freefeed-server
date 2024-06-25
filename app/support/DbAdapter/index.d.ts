@@ -157,6 +157,10 @@ export class DbAdapter {
     Map<UUID, typeof User.ACCEPT_DIRECTS_FROM_ALL | typeof User.ACCEPT_DIRECTS_FROM_FRIENDS>
   >;
   getAllUsersIds(limit?: number, offset?: number, types?: ('user' | 'group')[]): Promise<UUID[]>;
+  /**
+   * Returns unsorted IDs of users whose username sparse matches `query`.
+   */
+  sparseMatchesUserIds(query: string): Promise<UUID[]>;
 
   getUsersIdsByIntIds(intIds: number[]): Promise<{ id: number; uid: UUID }[]>;
   getPostsIdsByIntIds(intIds: number[]): Promise<{ id: number; uid: UUID }[]>;

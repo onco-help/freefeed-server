@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.0] - Not released
+### Added
+- The V3 API is now available. The only difference from V2 is:
+  - Serialized posts with omitted comments now have two comments after the
+    omitted part (and this count is defined in server config). They also have a
+    new _omitCommentsOffset_ field, that contains the offset of omitted part in
+    the _comments_ array (which now has three comments if the omitted part is
+    present). Client must use the _omitCommentsOffset_ field to determine, which
+    of the _comments_ are before and after the omitted part.
+
+    It is a broken change because the old clients expects the _comments_ array
+    of a post with omitted comments to always have two comments total.
+- New API endpoint `GET /v2/users/sparseMatches?qs=...` to get list of
+  non-private users and groups, whose username _sparse matches_ the query
+  string. The sparse match means that the username must contain all the query
+  string letters in the given order, but with possible other letters in between.
+  For example, the 'ur[an]us', '[an]tenna', 's[a]tur[n]' matches the "an" query.
+
+  The query string should match the `[a-z0-9-]{2,}` regex.
+
+  The order of the results is not specified, the client should sort them at
+  their side.
+
 ## [2.20.0] - 2024-05-27
 #### Changed
 - Comments from users who have blocked the current viewer are visible to the

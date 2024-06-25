@@ -503,4 +503,12 @@ config.translation = {
   apiKey: 'OVERRIDE_IT',
 };
 
+config.foldingInPosts = {
+  headComments: 1, // Comments before omitted
+  tailComments: 2, // Comments after omitted
+  minOmittedComments: 2, // Minimum number of omitted comments
+  headLikes: 3, // Likes before omitted
+  minOmittedLikes: 2, // Minimum number of omitted likes
+};
+
 module.exports = config;

@@ -746,7 +746,9 @@ export default class PubsubListener {
   }
 
   _postEventEmitter = async (socket, type, { postId, realtimeChannels }) => {
-    const json = await serializeSinglePost(postId, socket.userId);
+    const json = await serializeSinglePost(postId, socket.userId, {
+      apiVersion: socket.apiVersion,
+    });
     defaultEmitter(socket, type, { ...json, realtimeChannels });
   };
 

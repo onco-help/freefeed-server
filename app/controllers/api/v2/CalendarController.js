@@ -41,7 +41,7 @@ export const getMyCalendarDatePosts = compose([
   targetUserRequired(),
   monitored('calendar.datePosts'),
   async (ctx) => {
-    const { targetUser, user } = ctx.state;
+    const { targetUser, user, apiVersion } = ctx.state;
     const currentUserId = user.id;
     const { year, month, day } = ctx.params;
     const offset = parseInt(ctx.request.query.offset, 10) || 0;
@@ -78,7 +78,10 @@ export const getMyCalendarDatePosts = compose([
       foundPostsIds.length = limit;
     }
 
-    const feed = await serializeFeed(foundPostsIds, currentUserId, null, { isLastPage });
+    const feed = await serializeFeed(foundPostsIds, currentUserId, null, {
+      isLastPage,
+      apiVersion,
+    });
 
     const previousDay = await dbAdapter.getMyCalendarFirstDayWithPostsBeforeDate(
       currentUserId,
