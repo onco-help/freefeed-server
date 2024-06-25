@@ -23,7 +23,9 @@ export const bestOf = compose([
   async (ctx) => {
     const DEFAULT_LIMIT = 30;
 
-    const currentUserId = ctx.state.user ? ctx.state.user.id : null;
+    const { user: currentUser, apiVersion } = ctx.state;
+
+    const currentUserId = currentUser?.id ?? null;
     const offset = parseInt(ctx.request.query.offset, 10) || 0;
     const limit = parseInt(ctx.request.query.limit, 10) || DEFAULT_LIMIT;
 
@@ -34,7 +36,7 @@ export const bestOf = compose([
       foundPostsIds.length = limit;
     }
 
-    ctx.body = await serializeFeed(foundPostsIds, currentUserId, null, { isLastPage });
+    ctx.body = await serializeFeed(foundPostsIds, currentUserId, null, { isLastPage, apiVersion });
   },
 ]);
 
@@ -60,7 +62,7 @@ export const ownTimeline = (feedName, params = {}) =>
     authRequired(),
     monitored(`timelines.${monitoredFeedName(feedName)}-v2`),
     async (ctx) => {
-      const { user } = ctx.state;
+      const { user, apiVersion } = ctx.state;
       let timeline;
 
       if (ctx.params.feedId) {
@@ -73,7 +75,11 @@ export const ownTimeline = (feedName, params = {}) =>
         throw new NotFoundException(`Timeline is not found`);
       }
 
-      ctx.body = await genericTimeline(timeline, user.id, { ...params, ...getCommonParams(ctx) });
+      ctx.body = await genericTimeline(timeline, user.id, {
+        ...params,
+        ...getCommonParams(ctx),
+        apiVersion,
+      });
     },
   ]);
 
@@ -82,11 +88,12 @@ export const userTimeline = (feedName) =>
     targetUserRequired(),
     monitored(`timelines.${feedName.toLowerCase()}-v2`),
     async (ctx) => {
-      const { targetUser, user: viewer } = ctx.state;
+      const { targetUser, user: viewer, apiVersion } = ctx.state;
       const timeline = await dbAdapter.getUserNamedFeed(targetUser.id, feedName);
       ctx.body = await genericTimeline(timeline, viewer ? viewer.id : null, {
         withoutDirects: feedName !== 'Posts',
         ...getCommonParams(ctx),
+        apiVersion,
       });
     },
   ]);
@@ -95,8 +102,11 @@ export const everything = compose([
   monitored(`timelines.everything`),
   authRequired(),
   async (ctx) => {
-    const { user: viewer } = ctx.state;
-    ctx.body = await genericTimeline(null, viewer ? viewer.id : null, getCommonParams(ctx));
+    const { user: viewer, apiVersion } = ctx.state;
+    ctx.body = await genericTimeline(null, viewer ? viewer.id : null, {
+      ...getCommonParams(ctx),
+      apiVersion,
+    });
   },
 ]);
 
@@ -260,5 +270,8 @@ async function genericTimeline(timeline = null, viewerId = null, params = {}) {
     postsIds.length = params.limit;
   }
 
-  return await serializeFeed(postsIds, viewerId, timeline, { isLastPage });
+  return await serializeFeed(postsIds, viewerId, timeline, {
+    isLastPage,
+    apiVersion: params.apiVersion,
+  });
 }

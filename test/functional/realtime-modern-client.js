@@ -6,7 +6,7 @@ import { getSingleton } from '../../app/app';
 import { PubSub } from '../../app/models';
 import { PubSubAdapter, eventNames } from '../../app/support/PubSubAdapter';
 import cleanDB from '../dbCleaner';
-import { API_VERSION_ACTUAL } from '../../app/api-versions';
+import { API_VERSION_MINIMAL } from '../../app/api-versions';
 
 import { createTestUser, createAndReturnPost, goPrivate } from './functional_test_helper';
 import Session from './realtime-session';
@@ -42,7 +42,7 @@ describe('Basic realtime operations with the modern client', () => {
     expect(resp, 'to equal', {
       success: true,
       userId: luna.user.id,
-      apiVersion: API_VERSION_ACTUAL,
+      apiVersion: API_VERSION_MINIMAL,
       rooms: {},
     });
   });
@@ -52,7 +52,7 @@ describe('Basic realtime operations with the modern client', () => {
     expect(resp, 'to equal', {
       success: true,
       userId: null,
-      apiVersion: API_VERSION_ACTUAL,
+      apiVersion: API_VERSION_MINIMAL,
       rooms: {},
     });
   });
