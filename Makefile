@@ -1,7 +1,5 @@
 VERSION = $(shell git describe --tags)
-IMAGE = freefeed/freefeed-server
-
-all: init
+IMAGE = ilvar/oh-server
 
 image:
 	@docker build -t $(IMAGE):$(VERSION) .
@@ -20,4 +18,4 @@ clean:
 	docker rmi $(IMAGE):latest
 	rm -rf node_modules
 
-.PHONY: all image latest push push-latest clean
+.PHONY: image latest push push-latest clean

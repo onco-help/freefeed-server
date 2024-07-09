@@ -18,7 +18,7 @@ const stubTransport = function () {
 };
 
 const config = {
-  siteTitle: 'FreeFeed',
+  siteTitle: 'OncoHelp',
 
   port: 3000,
   database: 2,

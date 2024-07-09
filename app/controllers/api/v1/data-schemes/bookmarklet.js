@@ -5,7 +5,7 @@ import definitions from './definitions';
 /**
  * Bookmarklet schema is based on schemas used by the following
  * clients on 2018-03-14:
- * https://github.com/FreeFeed/freefeed-react-client
+ * https://github.com/OncoHelp/freefeed-react-client
  * https://github.com/clbn/freefeed-gamma
  * https://github.com/davidmz/share-on-freefeed-ext
  * http://davidmz.github.io/frf-aprx/ (uses 'image' and do not uses 'meta')

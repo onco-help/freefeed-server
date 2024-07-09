@@ -82,7 +82,7 @@ export const authFinish = compose([
         email: state.profile.email,
       };
 
-      // Connect external profile to FreeFeed account
+      // Connect external profile to OncoHelp account
       if (state.params.mode === MODE_CONNECT) {
         const currentUser = ctx.state.user;
 

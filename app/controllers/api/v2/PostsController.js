@@ -68,7 +68,7 @@ export const opengraph = compose([
           let image_size;
 
           // Image fallback: thumbnail 2 (t2) => thumbnail (t) => original (o) => none
-          // Posts created in older versions of FreeFeed had only one thumbnail (t)
+          // Posts created in older versions of OncoHelp had only one thumbnail (t)
           if (`t2` in item.imageSizes) {
             image_size = `t2`; // Use high-res thumbnail
             image = item.imageSizes[image_size].url;

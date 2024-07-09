@@ -22,7 +22,7 @@ describe('search:linkToText', () => {
     { input: 'adobe.com', output: 'adobe com' },
     { input: 'www.adobe.com', output: 'adobe com' },
     {
-      input: 'https://github.com/FreeFeed/freefeed-server',
+      input: 'https://github.com/OncoHelp/freefeed-server',
       output: 'github com freefeed freefeed server',
     },
     {

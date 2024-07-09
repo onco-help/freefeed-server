@@ -1,7 +1,7 @@
 {
   "author": "epicmonkey <mail@epicmonkey.org>",
   "name": "freefeed-server",
-  "description": "FreeFeed is an open source FriendFeed clone (yes, it is free and open!) based on Pepyatka open-source FriendFeed clone (yes, that one is also free and open). Basically, this is a social real-time feed aggregator that allows you to share cute kittens, coordinate upcoming events, discuss any other cool stuff on the Internet or setup a private Pepyatka instance in your company.",
+  "description": "OncoHelp is an open source FriendFeed clone (yes, it is free and open!) based on Pepyatka open-source FriendFeed clone (yes, that one is also free and open). Basically, this is a social real-time feed aggregator that allows you to share cute kittens, coordinate upcoming events, discuss any other cool stuff on the Internet or setup a private Pepyatka instance in your company.",
   "homepage": "https://freefeed.net",
   "version": "2.21.0",
   "private": true,
@@ -32,7 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/FreeFeed/freefeed-server.git"
+    "url": "git://github.com/OncoHelp/freefeed-server.git"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "~3.577.0",

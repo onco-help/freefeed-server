@@ -1,6 +1,6 @@
 # API Versions
 
-All backward-incompatible FreeFeed API changes will be documented in this file.
+All backward-incompatible OncoHelp API changes will be documented in this file.
 
 See the [About API versions](#about-api-versions) section in the end of this
 file for the general versioning information.
@@ -31,10 +31,10 @@ reasons).
 
 ### General rules
 
-FreeFeed API versions are a monotonically increasing sequence of integers. Any
+OncoHelp API versions are a monotonically increasing sequence of integers. Any
 backward incompatible API changes causes an increase in the version.
 
-FreeFeed may support not only the latest version of the API, but several
+OncoHelp may support not only the latest version of the API, but several
 previous versions as well. However, very old versions may be declared obsolete
 and unsupported.
 

@@ -107,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.18.0] - 2024-01-19
 ### Changed
-- FreeFeed server now uses Socket.IO v4 for realtime messaging. The previous
+- OncoHelp server now uses Socket.IO v4 for realtime messaging. The previous
   versions of Socket.IO _clients_ (v2 and v3) are also supported.
 
 ## [2.17.0] - 2023-12-21
@@ -176,7 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.14.0] - 2023-09-02
 ### Added
-- Short Links for posts and comments in FreeFeed texts: e.g. `/user/4a39b8`
+- Short Links for posts and comments in OncoHelp texts: e.g. `/user/4a39b8`
   (a linked post) or `/groupname/f482e5#ad2b` (a linked comment).
 
   A short link consists of `/` followed by username/groupname, and another `/`
@@ -184,7 +184,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consisting of `#` and `comment_short_id`. Short IDs are hexadecimal strings, 
   6 to 10 chars long (post_short_id), or 4 to 6 chars long (comment_short_id).
 
-  FreeFeed clients will be expected to parse these in texts and make them 
+  OncoHelp clients will be expected to parse these in texts and make them 
   clickable hyperlinks where it makes sense. Server-side support includes:
 
   - Generating short IDs for posts and comments, storing them in the DB
@@ -194,7 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (`GET /v2/posts/:postId`)
   - Necessary changes in Backlinks and Notifications to enable the short links
     support
-  - An admin script for backfilling short IDs for existing FreeFeed instances
+  - An admin script for backfilling short IDs for existing OncoHelp instances
 
 - A `withModifiedConfig` helper function that allows to override configuration
   in test.
@@ -375,9 +375,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.0] - 2023-01-18
 ### Added
 - Server now can handle multiple API versions simultaneously as described in
-  [RFC](https://paper.dropbox.com/doc/FreeFeed-API-SblfMOTWnFJcpSjvHs9h5). The
+  [RFC](https://paper.dropbox.com/doc/OncoHelp-API-SblfMOTWnFJcpSjvHs9h5). The
   current version is '2'. Added new file [API_VERSIONS.md](API_VERSIONS.md) with
-  version history and brief description of FreeFeed versioning principles for
+  version history and brief description of OncoHelp versioning principles for
   API users.
   - Internally, the requested API version is available via the
     `ctx.state.apiVersion` property in REST controllers and via the
@@ -839,7 +839,7 @@ specs).
    GitHub.
 
  - The new fields in the config: _siteTitle_, _company.title_ and
-   _company.address_. These fields can be used to customize site (FreeFeed
+   _company.address_. These fields can be used to customize site (OncoHelp
    instance) branding in emails, RSS feeds and service messages.
 
 ## [1.87.0] - 2020-10-13

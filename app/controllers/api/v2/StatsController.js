@@ -5,7 +5,7 @@ import { dbAdapter } from '../../../models';
 export default class StatsController {
   static async stats(ctx) {
     const MAX_STATS_PERIOD = 365 * 2; // 2 years
-    const MIN_START_DATE = moment('20150504'); // FreeFeed launched
+    const MIN_START_DATE = moment('20150504'); // OncoHelp launched
 
     const DEFAULT_START_DATE = moment().subtract(MAX_STATS_PERIOD, 'days').format('YYYY-MM-DD');
     const DEFAULT_END_DATE = moment().format('YYYY-MM-DD');

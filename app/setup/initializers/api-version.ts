@@ -23,7 +23,7 @@ export async function apiVersionMiddleware(ctx: Context, next: Next) {
   }
 
   ctx.state.apiVersion = apiVersion;
-  ctx.response.set('FreeFeed-API-Version', apiVersion.toString(10));
+  ctx.response.set('OncoHelp-API-Version', apiVersion.toString(10));
 
   await next();
 }

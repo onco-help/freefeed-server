@@ -1,16 +1,16 @@
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFreeFeed%2Ffreefeed-server.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FFreeFeed%2Ffreefeed-server?ref=badge_shield)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FOncoHelp%2Ffreefeed-server.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FOncoHelp%2Ffreefeed-server?ref=badge_shield)
 
-# FreeFeed Server
+# OncoHelp Server
 
-FreeFeed is a social network that enables you to discover and discuss the interesting
+OncoHelp is a social network that enables you to discover and discuss the interesting
 stuff your friends find on the web.
 
-FreeFeed is being built as a replacement for FriendFeed, the real-time aggregator and social network
+OncoHelp is being built as a replacement for FriendFeed, the real-time aggregator and social network
 where "likes" for user generated content were implemented for the first time.
 
-FreeFeed is based on [Pepyatka](https://github.com/pepyatka/pepyatka-server/) project
+OncoHelp is based on [Pepyatka](https://github.com/pepyatka/pepyatka-server/) project
 
-## Getting started with FreeFeed on macOS
+## Getting started with OncoHelp on macOS
 
 ### Set up dependencies via Homebrew
 
@@ -53,7 +53,7 @@ mkdir -p /tmp/pepyatka-media/attachments/anotherTestSize
 
 3. Create config `config/local.json` with some random secret string: `{   "secret": "myverysecretstring"  }`.
 
-4. Now you are ready to run the FreeFeed server:
+4. Now you are ready to run the OncoHelp server:
 
 ```
 yarn start
@@ -61,9 +61,9 @@ yarn start
 
 ### Custom configuration
 
-If you have other PostgreSQL (or any other) settings than default, you should configure FreeFeed server in a proper way.
+If you have other PostgreSQL (or any other) settings than default, you should configure OncoHelp server in a proper way.
 
-The FreeFeed server uses [node-config](https://github.com/lorenwest/node-config) for configuration. You can create your own local configuration file to override any of default values. See the [Configuration Files](https://github.com/lorenwest/node-config/wiki/Configuration-Files) page of node-config documentation for details.
+The OncoHelp server uses [node-config](https://github.com/lorenwest/node-config) for configuration. You can create your own local configuration file to override any of default values. See the [Configuration Files](https://github.com/lorenwest/node-config/wiki/Configuration-Files) page of node-config documentation for details.
 
 The default configuration is defined in `config/default.js` file. The `config/test.js` and `config/default-travis.json` files can be used as an example of customized configurations (for the 'test' and Travis CI environments accordingly).
 
@@ -106,7 +106,7 @@ You can drop your question [here](https://freefeed.net/support).
 
 ## Copyright and license
 
-FreeFeed is licensed under the MIT License.
+OncoHelp is licensed under the MIT License.
 
 ## License
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFreeFeed%2Ffreefeed-server.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FFreeFeed%2Ffreefeed-server?ref=badge_large)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FOncoHelp%2Ffreefeed-server.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FOncoHelp%2Ffreefeed-server?ref=badge_large)

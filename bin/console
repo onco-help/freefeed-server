@@ -11,7 +11,7 @@ process.env.NODE_ENV = "console"
 initApp()
   .then((app) => {
     const replServer = repl.start({
-      prompt: "FreeFeed > "
+      prompt: "OncoHelp > "
     })
 
     replServer.on('exit', function () {
