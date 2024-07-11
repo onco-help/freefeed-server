@@ -1,0 +1,26 @@
+{
+  siteTitle: "OncoHelp",
+  port: 3000,
+  origin: "https://oh-client.c.rkd.pw",
+  appRoot: ".",
+  onboardingUsername: "welcome",
+  recaptcha: { enabled: false },
+  // sentryDsn: "",
+  frontendPreferencesLimit: 65536,
+  monitorPrefix: "development",
+  adminEmail: "a@rkd.pw",
+  company: {
+    title: "OncoHelp",
+    address: "OncoHelp Address, City, Country",
+  },
+  redis: {
+    host: "srv-captain--oh-redis"
+  },
+  profilePictures: {
+    defaultProfilePictureMediumUrl: "https://loremflickr.com/50/50"
+  },
+  invitations: {
+    requiredForSignUp: true
+  }
+  
+}
