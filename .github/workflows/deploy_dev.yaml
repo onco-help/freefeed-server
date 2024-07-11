@@ -40,14 +40,6 @@ jobs:
         uses: caprover/deploy-from-github@v1.1.2
         with:
           server: ${{ secrets.CAPROVER_HOST }}
-          app: kosmos-crm
-          token: "${{ secrets.CAPROVER_APP_TOKEN }}"
-          image: "${{ env.FULL_IMAGE_NAME }}"
-
-      - name: Deploy to CapRover QA
-        uses: caprover/deploy-from-github@v1.1.2
-        with:
-          server: ${{ secrets.CAPROVER_HOST }}
           app: oh-server
-          token: "${{ secrets.CAPROVER_APP_TOKEN_QA }}"
+          token: "${{ secrets.CAPROVER_APP_TOKEN }}"
           image: "${{ env.FULL_IMAGE_NAME }}"
