@@ -1,4 +1,4 @@
-FROM node:18-bookworm
+FROM node:20-bookworm
 
 RUN apt-get update && \
     apt-get install -y \
@@ -24,7 +24,7 @@ RUN rm -rf node_modules && \
     rm -f log/*.log && \
     mkdir -p ./public/files/attachments/thumbnails && \
     mkdir -p ./public/files/attachments/thumbnails2 && \
-    yarn install 
+    yarn install
 
 ENV NODE_ENV production
 
