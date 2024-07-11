@@ -1,0 +1,54 @@
+name: Deploy to dev
+
+env:
+  CONTEXT_DIR: "./"
+  IMAGE_NAME: "ilvar/oh-server"
+  DOCKERFILE: Dockerfile
+
+on:
+  push:
+    branches:
+      - main
+      - add-dev-cd
+
+jobs:
+  build-and-publish:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v1
+      - run: |
+          echo "IMAGE_NAME_WITH_REGISTRY=$IMAGE_NAME" >> $GITHUB_ENV
+          export IMAGE_NAME_WITH_REGISTRY=$IMAGE_NAME
+          echo "FULL_IMAGE_NAME=$IMAGE_NAME_WITH_REGISTRY:$GITHUB_SHA-$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Release to DockerHub
+        shell: bash
+        run: |
+          docker build -t ${{ env.FULL_IMAGE_NAME }} -t ${{ env.IMAGE_NAME_WITH_REGISTRY }}:latest -f ${{ env.DOCKERFILE }} ${{ env.CONTEXT_DIR }}
+          docker push ${{ env.IMAGE_NAME_WITH_REGISTRY }}:latest
+          docker push ${{ env.FULL_IMAGE_NAME }}
+
+      - name: Deploy to CapRover Dev
+        uses: caprover/deploy-from-github@v1.1.2
+        with:
+          server: ${{ secrets.CAPROVER_HOST }}
+          app: kosmos-crm
+          token: "${{ secrets.CAPROVER_APP_TOKEN }}"
+          image: "${{ env.FULL_IMAGE_NAME }}"
+
+      - name: Deploy to CapRover QA
+        uses: caprover/deploy-from-github@v1.1.2
+        with:
+          server: ${{ secrets.CAPROVER_HOST }}
+          app: oh-server
+          token: "${{ secrets.CAPROVER_APP_TOKEN_QA }}"
+          image: "${{ env.FULL_IMAGE_NAME }}"
