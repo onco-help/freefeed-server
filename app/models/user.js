@@ -413,6 +413,7 @@ export function addModel(dbAdapter) {
         type: this.type,
         isPrivate: this.isPrivate,
         isProtected: this.isProtected,
+        hasCancer: this.hasCancer,
         description: "",
         hashedPassword: this.hashedPassword,
         frontendPreferences: JSON.stringify({}),
