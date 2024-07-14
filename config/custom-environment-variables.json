@@ -24,5 +24,11 @@
       "user": "FRFS_PG_USER",
       "password": "FRFS_PG_PASSWORD"
     }
+  },
+  "media": {
+    "storage": {
+      "accessKeyId": "FRFS_S3_ACCESS_KEY_ID",
+      "secretAccessKey": "FRFS_S3_SECRET_KEY"
+    }
   }
 }
