@@ -1,24 +1,28 @@
-import crypto from 'crypto';
-import { promises as fs, createReadStream } from 'fs';
-import util from 'util';
+import crypto from "crypto";
+import { promises as fs, createReadStream } from "fs";
+import util from "util";
 
-import bcrypt from 'bcrypt';
-import gm from 'gm';
-import GraphemeBreaker from 'grapheme-breaker';
-import _ from 'lodash';
-import monitor from 'monitor-dog';
-import validator from 'validator';
-import { v4 as uuidv4 } from 'uuid';
-import config from 'config';
+import bcrypt from "bcrypt";
+import gm from "gm";
+import GraphemeBreaker from "grapheme-breaker";
+import _ from "lodash";
+import monitor from "monitor-dog";
+import validator from "validator";
+import { v4 as uuidv4 } from "uuid";
+import config from "config";
 
-import { getS3 } from '../support/s3';
-import { BadRequestException, NotFoundException, ValidationException } from '../support/exceptions';
-import { Attachment, Comment, Post, PubSub as pubSub } from '../models';
-import { EventService } from '../support/EventService';
-import { userCooldownStart, userDataDeletionStart } from '../jobs/user-gone';
-import { allExternalProviders } from '../support/ExtAuth';
+import { getS3 } from "../support/s3";
+import {
+  BadRequestException,
+  NotFoundException,
+  ValidationException,
+} from "../support/exceptions";
+import { Attachment, Comment, Post, PubSub as pubSub } from "../models";
+import { EventService } from "../support/EventService";
+import { userCooldownStart, userDataDeletionStart } from "../jobs/user-gone";
+import { allExternalProviders } from "../support/ExtAuth";
 
-import { validate as validateUserPrefs } from './user-prefs';
+import { validate as validateUserPrefs } from "./user-prefs";
 
 const randomBytes = util.promisify(crypto.randomBytes);
 
@@ -32,10 +36,10 @@ export const GONE_DELETION = 30;
 export const GONE_DELETED = 40;
 
 export const GONE_NAMES = {
-  [GONE_SUSPENDED]: 'SUSPENDED',
-  [GONE_COOLDOWN]: 'COOLDOWN',
-  [GONE_DELETION]: 'DELETION',
-  [GONE_DELETED]: 'DELETED',
+  [GONE_SUSPENDED]: "SUSPENDED",
+  [GONE_COOLDOWN]: "COOLDOWN",
+  [GONE_DELETION]: "DELETION",
+  [GONE_DELETED]: "DELETED",
 };
 
 export function addModel(dbAdapter) {
@@ -43,21 +47,21 @@ export function addModel(dbAdapter) {
     static PROFILE_PICTURE_SIZE_LARGE = 75;
     static PROFILE_PICTURE_SIZE_MEDIUM = 50;
 
-    static ACCEPT_DIRECTS_FROM_ALL = 'all';
-    static ACCEPT_DIRECTS_FROM_FRIENDS = 'friends';
+    static ACCEPT_DIRECTS_FROM_ALL = "all";
+    static ACCEPT_DIRECTS_FROM_FRIENDS = "friends";
 
     static feedNames = [
-      'RiverOfNews',
-      'Hides',
-      'Comments',
-      'Likes',
-      'Posts',
-      'Directs',
-      'MyDiscussions',
-      'Saves',
+      "RiverOfNews",
+      "Hides",
+      "Comments",
+      "Likes",
+      "Posts",
+      "Directs",
+      "MyDiscussions",
+      "Saves",
     ];
 
-    type = 'user';
+    type = "user";
 
     constructor(params) {
       this.goneStatus = params.goneStatus || null;
@@ -68,13 +72,18 @@ export function addModel(dbAdapter) {
       this.email = params.email;
       // The .hiddenEmail field holds real email address of inactive user (the
       // .email field of such user is always empty)
-      this.hiddenEmail = params.email || '';
-      this.description = params.description || '';
+      this.hiddenEmail = params.email || "";
+      this.description = params.description || "";
       this.frontendPreferences = params.frontendPreferences || {};
-      this.preferences = validateUserPrefs(params.preferences, true, params.createdAt);
+      this.preferences = validateUserPrefs(
+        params.preferences,
+        true,
+        params.createdAt,
+      );
 
       this.isPrivate = params.isPrivate;
-      this.isProtected = this.isPrivate === '1' ? '1' : params.isProtected;
+      this.isProtected = this.isPrivate === "1" ? "1" : params.isProtected;
+      this.hasCancer = params.hasCancer || false;
 
       this.invitationId = params.invitationId || null;
 
@@ -88,7 +97,7 @@ export function addModel(dbAdapter) {
 
       this.goneAt = params.goneAt;
 
-      this.profilePictureUuid = params.profilePictureUuid || '';
+      this.profilePictureUuid = params.profilePictureUuid || "";
       this.subscribedFeedIds = params.subscribedFeedIds || [];
       this.privateMeta = params.privateMeta;
       this.notificationsReadAt = params.notificationsReadAt;
@@ -98,7 +107,7 @@ export function addModel(dbAdapter) {
           this.plaintextPassword = null;
           this.hashedPassword = params.hashedPassword;
         } else {
-          this.plaintextPassword = params.password || '';
+          this.plaintextPassword = params.password || "";
           this.hashedPassword = null;
         }
 
@@ -110,14 +119,14 @@ export function addModel(dbAdapter) {
         // 'Anonymize' inactive users
         // Only id's, username and createdAt are visible
         this.screenName = this.username;
-        this.email = '';
-        this.description = '';
+        this.email = "";
+        this.description = "";
         this.frontendPreferences = {};
         this.preferences = validateUserPrefs({}, true, this.createdAt);
-        this.isPrivate = '1';
-        this.isProtected = '1';
+        this.isPrivate = "1";
+        this.isProtected = "1";
         this.updatedAt = this.createdAt;
-        this.profilePictureUuid = '';
+        this.profilePictureUuid = "";
         this.subscribedFeedIds = [];
         this.privateMeta = {};
         this.notificationsReadAt = this.createdAt;
@@ -145,7 +154,7 @@ export function addModel(dbAdapter) {
     }
 
     get email() {
-      return this.email_ === undefined ? '' : this.email_;
+      return this.email_ === undefined ? "" : this.email_;
     }
     set email(newValue) {
       if (_.isString(newValue)) {
@@ -157,14 +166,14 @@ export function addModel(dbAdapter) {
       return this.isPrivate_;
     }
     set isPrivate(newValue) {
-      this.isPrivate_ = newValue || '0';
+      this.isPrivate_ = newValue || "0";
     }
 
     get isProtected() {
       return this.isProtected_;
     }
     set isProtected(newValue) {
-      this.isProtected_ = newValue || '0';
+      this.isProtected_ = newValue || "0";
     }
 
     get description() {
@@ -206,7 +215,9 @@ export function addModel(dbAdapter) {
         return config.application.USERNAME_STOP_LIST;
       }
 
-      return config.application.USERNAME_STOP_LIST.concat(config.application.EXTRA_STOP_LIST);
+      return config.application.USERNAME_STOP_LIST.concat(
+        config.application.EXTRA_STOP_LIST,
+      );
     }
 
     static getObjectsByIds(objectIds) {
@@ -214,7 +225,7 @@ export function addModel(dbAdapter) {
     }
 
     isUser() {
-      return this.type === 'user';
+      return this.type === "user";
     }
     isGroup() {
       return !this.isUser();
@@ -244,7 +255,7 @@ export function addModel(dbAdapter) {
 
     async generateResetPasswordToken() {
       const buf = await randomBytes(config.passwordReset.tokenBytesLength);
-      return buf.toString('base64').replace(/\W/g, '');
+      return buf.toString("base64").replace(/\W/g, "");
     }
 
     validPassword(clearPassword) {
@@ -270,14 +281,14 @@ export function addModel(dbAdapter) {
       }
 
       if (!validator.isEmail(email)) {
-        throw new ValidationException('Invalid email format');
+        throw new ValidationException("Invalid email format");
       }
 
       const exists = await dbAdapter.existsEmail(email);
 
       if (exists) {
         // email is taken
-        throw new ValidationException('This email address is already in use');
+        throw new ValidationException("This email address is already in use");
       }
     }
 
@@ -297,7 +308,7 @@ export function addModel(dbAdapter) {
     }
 
     screenNameIsValid(screenName) {
-      if (typeof screenName !== 'string') {
+      if (typeof screenName !== "string") {
         return false;
       }
 
@@ -335,7 +346,10 @@ export function addModel(dbAdapter) {
       }
 
       for (const prop in frontendPreferences) {
-        if (!frontendPreferences[prop] || typeof frontendPreferences[prop] !== 'object') {
+        if (
+          !frontendPreferences[prop] ||
+          typeof frontendPreferences[prop] !== "object"
+        ) {
           return false;
         }
       }
@@ -345,7 +359,7 @@ export function addModel(dbAdapter) {
 
     async validate(skip_stoplist) {
       if (!this.isValidUsername(skip_stoplist)) {
-        throw new ValidationException('Invalid username');
+        throw new ValidationException("Invalid username");
       }
 
       if (!this.isValidScreenName()) {
@@ -357,7 +371,7 @@ export function addModel(dbAdapter) {
       await User.validateEmail(this.email);
 
       if (!this.isValidDescription()) {
-        throw new ValidationException('Description is too long');
+        throw new ValidationException("Description is too long");
       }
     }
 
@@ -365,16 +379,19 @@ export function addModel(dbAdapter) {
       const res = await dbAdapter.existsUsername(this.username);
 
       if (res !== 0) {
-        throw new ValidationException('Already exists');
+        throw new ValidationException("Already exists");
       }
     }
 
     async validateOnCreate(skip_stoplist) {
-      await Promise.all([this.validate(skip_stoplist), this.validateUsernameUniqueness()]);
+      await Promise.all([
+        this.validate(skip_stoplist),
+        this.validateUsernameUniqueness(),
+      ]);
 
-      if (this.type === 'user' && this.plaintextPassword !== null) {
+      if (this.type === "user" && this.plaintextPassword !== null) {
         if (this.plaintextPassword.length === 0) {
-          throw new ValidationException('Password cannot be blank');
+          throw new ValidationException("Password cannot be blank");
         }
 
         this.hashedPassword = await bcrypt.hash(this.plaintextPassword, 10);
@@ -387,7 +404,7 @@ export function addModel(dbAdapter) {
 
       await this.validateOnCreate(skip_stoplist);
 
-      const timer = monitor.timer('users.create-time');
+      const timer = monitor.timer("users.create-time");
 
       const payload = {
         username: this.username,
@@ -396,7 +413,7 @@ export function addModel(dbAdapter) {
         type: this.type,
         isPrivate: this.isPrivate,
         isProtected: this.isProtected,
-        description: '',
+        description: "",
         hashedPassword: this.hashedPassword,
         frontendPreferences: JSON.stringify({}),
         preferences: this.preferences,
@@ -405,13 +422,16 @@ export function addModel(dbAdapter) {
 
       const newAcc = await dbAdapter.createUser(payload);
 
-      for (const key of ['id', 'intId', 'createdAt', 'updatedAt']) {
+      for (const key of ["id", "intId", "createdAt", "updatedAt"]) {
         this[key] = newAcc[key];
       }
 
       await dbAdapter.createUserTimelines(this.id, User.feedNames);
+
+      this.subscribeTo("@general");
+
       timer.stop();
-      monitor.increment('users.creates');
+      monitor.increment("users.creates");
 
       return this;
     }
@@ -419,16 +439,19 @@ export function addModel(dbAdapter) {
     async update(params) {
       const payload = {};
       const changeableKeys = [
-        'screenName',
-        'email',
-        'isPrivate',
-        'isProtected',
-        'description',
-        'frontendPreferences',
-        'preferences',
+        "screenName",
+        "email",
+        "isPrivate",
+        "isProtected",
+        "description",
+        "frontendPreferences",
+        "preferences",
       ];
 
-      if (params.hasOwnProperty('screenName') && params.screenName != this.screenName) {
+      if (
+        params.hasOwnProperty("screenName") &&
+        params.screenName != this.screenName
+      ) {
         if (!this.screenNameIsValid(params.screenName)) {
           throw new ValidationException(
             `"${params.screenName}" is not a valid display name. Names must be between 3 and 25 characters long.`,
@@ -438,15 +461,18 @@ export function addModel(dbAdapter) {
         payload.screenName = params.screenName;
       }
 
-      if (params.hasOwnProperty('email') && params.email != this.email) {
+      if (params.hasOwnProperty("email") && params.email != this.email) {
         await User.validateEmail(params.email);
         payload.email = params.email;
       }
 
-      if (params.hasOwnProperty('isPrivate') && params.isPrivate != this.isPrivate) {
-        if (params.isPrivate != '0' && params.isPrivate != '1') {
+      if (
+        params.hasOwnProperty("isPrivate") &&
+        params.isPrivate != this.isPrivate
+      ) {
+        if (params.isPrivate != "0" && params.isPrivate != "1") {
           // ???
-          throw new ValidationException('bad input');
+          throw new ValidationException("bad input");
         }
 
         payload.isPrivate = params.isPrivate;
@@ -455,28 +481,34 @@ export function addModel(dbAdapter) {
       // Compatibility with pre-isProtected clients:
       // if there is only isPrivate param then isProtected becomes the same as isPrivate
       if (
-        params.hasOwnProperty('isPrivate') &&
-        (!params.hasOwnProperty('isProtected') || params.isPrivate === '1')
+        params.hasOwnProperty("isPrivate") &&
+        (!params.hasOwnProperty("isProtected") || params.isPrivate === "1")
       ) {
         params.isProtected = params.isPrivate;
       }
 
-      if (params.hasOwnProperty('isProtected') && params.isProtected != this.isProtected) {
+      if (
+        params.hasOwnProperty("isProtected") &&
+        params.isProtected != this.isProtected
+      ) {
         payload.isProtected = params.isProtected;
       }
 
-      if (params.hasOwnProperty('description') && params.description != this.description) {
+      if (
+        params.hasOwnProperty("description") &&
+        params.description != this.description
+      ) {
         if (!User.descriptionIsValid(params.description)) {
-          throw new ValidationException('Description is too long');
+          throw new ValidationException("Description is too long");
         }
 
         payload.description = params.description;
       }
 
-      if (params.hasOwnProperty('frontendPreferences')) {
+      if (params.hasOwnProperty("frontendPreferences")) {
         // Validate the input object
         if (!User.frontendPreferencesIsValid(params.frontendPreferences)) {
-          throw new ValidationException('Invalid frontendPreferences');
+          throw new ValidationException("Invalid frontendPreferences");
         }
 
         const preferences = {
@@ -486,15 +518,17 @@ export function addModel(dbAdapter) {
 
         // Validate the merged object
         if (!User.frontendPreferencesIsValid(preferences)) {
-          throw new ValidationException('Invalid frontendPreferences');
+          throw new ValidationException("Invalid frontendPreferences");
         }
 
         payload.frontendPreferences = preferences;
       }
 
-      if (params.hasOwnProperty('preferences')) {
+      if (params.hasOwnProperty("preferences")) {
         if (!_.isPlainObject(params.preferences)) {
-          throw new ValidationException(`Invalid 'preferences': must be a plain object`);
+          throw new ValidationException(
+            `Invalid 'preferences': must be a plain object`,
+          );
         }
 
         try {
@@ -517,8 +551,10 @@ export function addModel(dbAdapter) {
 
         preparedPayload.updatedAt = payload.updatedAt.toString();
 
-        if (_.has(payload, 'frontendPreferences')) {
-          preparedPayload.frontendPreferences = JSON.stringify(payload.frontendPreferences);
+        if (_.has(payload, "frontendPreferences")) {
+          preparedPayload.frontendPreferences = JSON.stringify(
+            payload.frontendPreferences,
+          );
         }
 
         await dbAdapter.updateUser(this.id, preparedPayload);
@@ -560,12 +596,14 @@ export function addModel(dbAdapter) {
       const managedGroupIds = await dbAdapter.getManagedGroupIds(this.id);
       // Some managed groups may change their isRestricted status so send update
       // for all of them (just to be safe)
-      await Promise.all(managedGroupIds.map((id) => pubSub.globalUserUpdate(id)));
+      await Promise.all(
+        managedGroupIds.map((id) => pubSub.globalUserUpdate(id)),
+      );
     }
 
     get goneStatusName() {
       if (this.goneStatus === null) {
-        return 'ACTIVE';
+        return "ACTIVE";
       }
 
       return GONE_NAMES[this.goneStatus] ?? `STATUS_${this.goneStatus}`;
@@ -577,11 +615,11 @@ export function addModel(dbAdapter) {
 
     async updatePassword(password, passwordConfirmation) {
       if (password.length === 0) {
-        throw new ValidationException('Password cannot be blank');
+        throw new ValidationException("Password cannot be blank");
       }
 
       if (password !== passwordConfirmation) {
-        throw new ValidationException('Passwords do not match');
+        throw new ValidationException("Passwords do not match");
       }
 
       const updatedAt = new Date().getTime();
@@ -607,7 +645,7 @@ export function addModel(dbAdapter) {
     }
 
     getMyDiscussionsTimeline() {
-      return dbAdapter.getUserNamedFeed(this.id, 'MyDiscussions');
+      return dbAdapter.getUserNamedFeed(this.id, "MyDiscussions");
     }
 
     async getGenericTimelineId(name) {
@@ -622,13 +660,17 @@ export function addModel(dbAdapter) {
     }
 
     async getUnreadDirectsNumber() {
-      const unreadDirectsNumber = await dbAdapter.getUnreadDirectsNumber(this.id);
+      const unreadDirectsNumber = await dbAdapter.getUnreadDirectsNumber(
+        this.id,
+      );
       return unreadDirectsNumber;
     }
 
     async getGenericTimelineIntId(name) {
       const timelineIds = await this.getTimelineIds();
-      const intIds = await dbAdapter.getTimelinesIntIdsByUUIDs([timelineIds[name]]);
+      const intIds = await dbAdapter.getTimelinesIntIdsByUUIDs([
+        timelineIds[name],
+      ]);
 
       if (intIds.length === 0) {
         return null;
@@ -642,79 +684,79 @@ export function addModel(dbAdapter) {
     }
 
     getMyDiscussionsTimelineIntId() {
-      return this.getGenericTimelineIntId('MyDiscussions');
+      return this.getGenericTimelineIntId("MyDiscussions");
     }
 
     getHidesTimelineId() {
-      return this.getGenericTimelineId('Hides');
+      return this.getGenericTimelineId("Hides");
     }
 
     getHidesTimelineIntId(params) {
-      return this.getGenericTimelineIntId('Hides', params);
+      return this.getGenericTimelineIntId("Hides", params);
     }
 
     getSavesTimelineId() {
-      return this.getGenericTimelineId('Saves');
+      return this.getGenericTimelineId("Saves");
     }
 
     getSavesTimelineIntId(params) {
-      return this.getGenericTimelineIntId('Saves', params);
+      return this.getGenericTimelineIntId("Saves", params);
     }
 
     getRiverOfNewsTimelineId() {
-      return this.getGenericTimelineId('RiverOfNews');
+      return this.getGenericTimelineId("RiverOfNews");
     }
 
     getRiverOfNewsTimelineIntId(params) {
-      return this.getGenericTimelineIntId('RiverOfNews', params);
+      return this.getGenericTimelineIntId("RiverOfNews", params);
     }
 
     getRiverOfNewsTimeline() {
-      return dbAdapter.getUserNamedFeed(this.id, 'RiverOfNews');
+      return dbAdapter.getUserNamedFeed(this.id, "RiverOfNews");
     }
 
     getLikesTimelineId() {
-      return this.getGenericTimelineId('Likes');
+      return this.getGenericTimelineId("Likes");
     }
 
     getLikesTimelineIntId() {
-      return this.getGenericTimelineIntId('Likes');
+      return this.getGenericTimelineIntId("Likes");
     }
 
     getLikesTimeline(params) {
-      return this.getGenericTimeline('Likes', params);
+      return this.getGenericTimeline("Likes", params);
     }
 
     getPostsTimelineId() {
-      return this.getGenericTimelineId('Posts');
+      return this.getGenericTimelineId("Posts");
     }
 
     getPostsTimelineIntId() {
-      return this.getGenericTimelineIntId('Posts');
+      return this.getGenericTimelineIntId("Posts");
     }
 
     getPostsTimeline(params) {
-      return this.getGenericTimeline('Posts', params);
+      return this.getGenericTimeline("Posts", params);
     }
 
     getCommentsTimelineId() {
-      return this.getGenericTimelineId('Comments');
+      return this.getGenericTimelineId("Comments");
     }
 
     getCommentsTimelineIntId() {
-      return this.getGenericTimelineIntId('Comments');
+      return this.getGenericTimelineIntId("Comments");
     }
 
     getCommentsTimeline(params) {
-      return this.getGenericTimeline('Comments', params);
+      return this.getGenericTimeline("Comments", params);
     }
 
     getDirectsTimelineId() {
-      return this.getGenericTimelineId('Directs');
+      return this.getGenericTimelineId("Directs");
     }
 
     getDirectsTimeline(params) {
-      return this.getGenericTimeline('Directs', params);
+      return this.getGenericTimeline("Directs", params);
     }
 
     async getTimelineIds() {
@@ -724,7 +766,10 @@ export function addModel(dbAdapter) {
 
     async getTimelines(params) {
       const timelineIds = await this.getTimelineIds();
-      const timelines = await dbAdapter.getTimelinesByIds(Object.values(timelineIds), params);
+      const timelines = await dbAdapter.getTimelinesByIds(
+        Object.values(timelineIds),
+        params,
+      );
       return _.sortBy(timelines, (tl) => User.feedNames.indexOf(tl.name));
     }
 
@@ -737,7 +782,11 @@ export function addModel(dbAdapter) {
     }
 
     getPublicTimelinesIntIds() {
-      return dbAdapter.getUserNamedFeedsIntIds(this.id, ['Posts', 'Likes', 'Comments']);
+      return dbAdapter.getUserNamedFeedsIntIds(this.id, [
+        "Posts",
+        "Likes",
+        "Comments",
+      ]);
     }
 
     /**
@@ -745,14 +794,14 @@ export function addModel(dbAdapter) {
      * @returns {Promise<Timeline>}
      */
     createHomeFeed(title) {
-      return dbAdapter.addNamedFeed(this.id, 'RiverOfNews', title);
+      return dbAdapter.addNamedFeed(this.id, "RiverOfNews", title);
     }
 
     /**
      * @returns {Promise<Timeline[]>}
      */
     getHomeFeeds() {
-      return dbAdapter.getAllUserNamedFeed(this.id, 'RiverOfNews');
+      return dbAdapter.getAllUserNamedFeed(this.id, "RiverOfNews");
     }
 
     getSubscriptionsWithHomeFeeds() {
@@ -763,7 +812,9 @@ export function addModel(dbAdapter) {
      * @return {Timeline[]}
      */
     async getSubscriptions() {
-      this.subscriptions = await dbAdapter.getTimelinesByIntIds(this.subscribedFeedIds);
+      this.subscriptions = await dbAdapter.getTimelinesByIntIds(
+        this.subscribedFeedIds,
+      );
       return this.subscriptions;
     }
 
@@ -816,9 +867,13 @@ export function addModel(dbAdapter) {
       }
 
       await Promise.all(promises);
-      monitor.increment('users.bans');
+      monitor.increment("users.bans");
 
-      await EventService.onUserBanned(this.intId, user.intId, bannedUserHasRequestedSubscription);
+      await EventService.onUserBanned(
+        this.intId,
+        user.intId,
+        bannedUserHasRequestedSubscription,
+      );
       return 1;
     }
 
@@ -830,7 +885,7 @@ export function addModel(dbAdapter) {
       }
 
       await dbAdapter.deleteUserBan(this.id, user.id);
-      monitor.increment('users.unbans');
+      monitor.increment("users.unbans");
       await EventService.onUserUnbanned(this.intId, user.intId);
       return 1;
     }
@@ -847,11 +902,12 @@ export function addModel(dbAdapter) {
      * @returns {boolean}
      */
     async subscribeTo(targetUser, { noEvents = false, homeFeedIds = [] } = {}) {
-      const { wasSubscribed, subscribedFeedIds } = await dbAdapter.subscribeUserToUser(
-        this.id,
-        targetUser.id,
-        homeFeedIds,
-      );
+      const { wasSubscribed, subscribedFeedIds } =
+        await dbAdapter.subscribeUserToUser(
+          this.id,
+          targetUser.id,
+          homeFeedIds,
+        );
 
       if (!wasSubscribed) {
         return false;
@@ -859,7 +915,7 @@ export function addModel(dbAdapter) {
 
       this.subscribedFeedIds = subscribedFeedIds;
 
-      monitor.increment('users.subscriptions');
+      monitor.increment("users.subscriptions");
 
       if (!noEvents) {
         if (targetUser.isUser()) {
@@ -883,10 +939,8 @@ export function addModel(dbAdapter) {
      * @returns {boolean}
      */
     async unsubscribeFrom(targetUser) {
-      const { wasUnsubscribed, subscribedFeedIds } = await dbAdapter.unsubscribeUserFromUser(
-        this.id,
-        targetUser.id,
-      );
+      const { wasUnsubscribed, subscribedFeedIds } =
+        await dbAdapter.unsubscribeUserFromUser(this.id, targetUser.id);
 
       this.subscribedFeedIds = subscribedFeedIds;
 
@@ -894,7 +948,7 @@ export function addModel(dbAdapter) {
         return false;
       }
 
-      monitor.increment('users.unsubscriptions');
+      monitor.increment("users.unsubscriptions");
 
       if (targetUser.isUser()) {
         await EventService.onUserUnsubscribed(this.intId, targetUser.intId);
@@ -916,7 +970,11 @@ export function addModel(dbAdapter) {
      * target
      */
     async setHomeFeedsSubscribedTo(targetUser, homeFeedIds) {
-      return await dbAdapter.updateSubscription(this.id, targetUser.id, homeFeedIds);
+      return await dbAdapter.updateSubscription(
+        this.id,
+        targetUser.id,
+        homeFeedIds,
+      );
     }
 
     /**
@@ -934,13 +992,13 @@ export function addModel(dbAdapter) {
 
     newComment(attrs) {
       attrs.userId = this.id;
-      monitor.increment('users.comments');
+      monitor.increment("users.comments");
       return new Comment(attrs);
     }
 
     newAttachment(attrs) {
       attrs.userId = this.id;
-      monitor.increment('users.attachments');
+      monitor.increment("users.attachments");
       return new Attachment(attrs);
     }
 
@@ -953,15 +1011,23 @@ export function addModel(dbAdapter) {
       try {
         originalSize = await image.sizeAsync();
       } catch (err) {
-        throw new BadRequestException('Not an image file');
+        throw new BadRequestException("Not an image file");
       }
 
       this.profilePictureUuid = uuidv4();
 
-      const sizes = [User.PROFILE_PICTURE_SIZE_LARGE, User.PROFILE_PICTURE_SIZE_MEDIUM];
+      const sizes = [
+        User.PROFILE_PICTURE_SIZE_LARGE,
+        User.PROFILE_PICTURE_SIZE_MEDIUM,
+      ];
 
       const promises = sizes.map((size) =>
-        this.saveProfilePictureWithSize(filePath, this.profilePictureUuid, originalSize, size),
+        this.saveProfilePictureWithSize(
+          filePath,
+          this.profilePictureUuid,
+          originalSize,
+          size,
+        ),
       );
       await Promise.all(promises);
 
@@ -998,12 +1064,16 @@ export function addModel(dbAdapter) {
         .autoOrient()
         .quality(95);
 
-      if (config.profilePictures.storage.type === 's3') {
+      if (config.profilePictures.storage.type === "s3") {
         const tmpPictureFile = `${path}.resized.${size}`;
         const destPictureFile = this.getProfilePictureFilename(uuid, size);
 
         await image.writeAsync(tmpPictureFile);
-        await this.uploadToS3(tmpPictureFile, destPictureFile, config.profilePictures);
+        await this.uploadToS3(
+          tmpPictureFile,
+          destPictureFile,
+          config.profilePictures,
+        );
 
         return fs.unlink(tmpPictureFile);
       }
@@ -1016,12 +1086,12 @@ export function addModel(dbAdapter) {
     async uploadToS3(sourceFile, destFile, subConfig) {
       const s3 = getS3(subConfig.storage);
       await s3.putObject({
-        ACL: 'public-read',
+        ACL: "public-read",
         Bucket: subConfig.storage.bucket,
         Key: subConfig.path + destFile,
         Body: createReadStream(sourceFile),
-        ContentType: 'image/jpeg',
-        ContentDisposition: 'inline',
+        ContentType: "image/jpeg",
+        ContentDisposition: "inline",
       });
     }
 
@@ -1040,50 +1110,62 @@ export function addModel(dbAdapter) {
     // used by serializer
     getProfilePictureLargeUrl() {
       if (_.isEmpty(this.profilePictureUuid)) {
-        return '';
+        return "";
       }
 
       return (
         config.profilePictures.url +
         config.profilePictures.path +
-        this.getProfilePictureFilename(this.profilePictureUuid, User.PROFILE_PICTURE_SIZE_LARGE)
+        this.getProfilePictureFilename(
+          this.profilePictureUuid,
+          User.PROFILE_PICTURE_SIZE_LARGE,
+        )
       );
     }
 
     // used by serializer
     getProfilePictureMediumUrl() {
       if (_.isEmpty(this.profilePictureUuid)) {
-        return '';
+        return "";
       }
 
       return (
         config.profilePictures.url +
         config.profilePictures.path +
-        this.getProfilePictureFilename(this.profilePictureUuid, User.PROFILE_PICTURE_SIZE_MEDIUM)
+        this.getProfilePictureFilename(
+          this.profilePictureUuid,
+          User.PROFILE_PICTURE_SIZE_MEDIUM,
+        )
       );
     }
 
     get profilePictureLargeUrl() {
       if (_.isEmpty(this.profilePictureUuid)) {
-        return '';
+        return "";
       }
 
       return (
         config.profilePictures.url +
         config.profilePictures.path +
-        this.getProfilePictureFilename(this.profilePictureUuid, User.PROFILE_PICTURE_SIZE_LARGE)
+        this.getProfilePictureFilename(
+          this.profilePictureUuid,
+          User.PROFILE_PICTURE_SIZE_LARGE,
+        )
       );
     }
 
     get profilePictureMediumUrl() {
       if (_.isEmpty(this.profilePictureUuid)) {
-        return '';
+        return "";
       }
 
       return (
         config.profilePictures.url +
         config.profilePictures.path +
-        this.getProfilePictureFilename(this.profilePictureUuid, User.PROFILE_PICTURE_SIZE_MEDIUM)
+        this.getProfilePictureFilename(
+          this.profilePictureUuid,
+          User.PROFILE_PICTURE_SIZE_MEDIUM,
+        )
       );
     }
 
@@ -1109,13 +1191,17 @@ export function addModel(dbAdapter) {
         return false;
       }
 
-      if (this.preferences.acceptDirectsFrom === User.ACCEPT_DIRECTS_FROM_FRIENDS) {
+      if (
+        this.preferences.acceptDirectsFrom === User.ACCEPT_DIRECTS_FROM_FRIENDS
+      ) {
         const friendIds = await this.getFriendIds();
 
         if (friendIds.includes(postingUser.id)) {
           return true;
         }
-      } else if (this.preferences.acceptDirectsFrom === User.ACCEPT_DIRECTS_FROM_ALL) {
+      } else if (
+        this.preferences.acceptDirectsFrom === User.ACCEPT_DIRECTS_FROM_ALL
+      ) {
         return true;
       }
 
@@ -1138,7 +1224,11 @@ export function addModel(dbAdapter) {
      * @returns {Promise<boolean>} - true if request was successfully created
      */
     sendSubscriptionRequest(toUserId, homeFeedIds = []) {
-      return dbAdapter.createSubscriptionRequest(this.id, toUserId, homeFeedIds);
+      return dbAdapter.createSubscriptionRequest(
+        this.id,
+        toUserId,
+        homeFeedIds,
+      );
     }
 
     /**
@@ -1150,7 +1240,10 @@ export function addModel(dbAdapter) {
      * @returns {Promise<boolean>} - false if there is no request
      */
     async acceptSubscriptionRequest(fromUser, acceptedBy = this) {
-      const request = await dbAdapter.getSubscriptionRequest(this.id, fromUser.id);
+      const request = await dbAdapter.getSubscriptionRequest(
+        this.id,
+        fromUser.id,
+      );
 
       if (!request) {
         return false;
@@ -1165,7 +1258,10 @@ export function addModel(dbAdapter) {
           fromUser.intId,
         );
       } else {
-        await EventService.onSubscriptionRequestApproved(fromUser.intId, this.intId);
+        await EventService.onSubscriptionRequestApproved(
+          fromUser.intId,
+          this.intId,
+        );
       }
 
       return true;
@@ -1176,14 +1272,14 @@ export function addModel(dbAdapter) {
     }
 
     async getPendingSubscriptionRequestIds() {
-      this.pendingSubscriptionRequestIds = await dbAdapter.getUserSubscriptionPendingRequestsIds(
-        this.id,
-      );
+      this.pendingSubscriptionRequestIds =
+        await dbAdapter.getUserSubscriptionPendingRequestsIds(this.id);
       return this.pendingSubscriptionRequestIds;
     }
 
     async getPendingSubscriptionRequests() {
-      const pendingSubscriptionRequestIds = await this.getPendingSubscriptionRequestIds();
+      const pendingSubscriptionRequestIds =
+        await this.getPendingSubscriptionRequestIds();
       return await dbAdapter.getUsersByIds(pendingSubscriptionRequestIds);
     }
 
@@ -1209,20 +1305,21 @@ export function addModel(dbAdapter) {
         return [];
       }
 
-      const timelineOwnerIds = _(timelines).map('userId').uniq().value();
+      const timelineOwnerIds = _(timelines).map("userId").uniq().value();
 
       if (timelineOwnerIds.length === 0) {
         return [];
       }
 
-      const timelineOwners = await dbAdapter.getFeedOwnersByIds(timelineOwnerIds);
+      const timelineOwners =
+        await dbAdapter.getFeedOwnersByIds(timelineOwnerIds);
 
       if (timelineOwners.length === 0) {
         return [];
       }
 
       const followedGroups = timelineOwners.filter((owner) => {
-        return 'group' === owner.type;
+        return "group" === owner.type;
       });
 
       return followedGroups;
@@ -1260,7 +1357,9 @@ export function addModel(dbAdapter) {
 
     async getExtProfiles() {
       const profilesFromDb = await dbAdapter.getExtProfiles(this.id);
-      return profilesFromDb.filter((p) => allExternalProviders.some((xp) => xp.id === p.provider));
+      return profilesFromDb.filter((p) =>
+        allExternalProviders.some((xp) => xp.id === p.provider),
+      );
     }
 
     /**

@@ -20,6 +20,7 @@ export const userCreateInputSchema = {
     password: { type: 'string', minLength: 1 },
     captcha: { type: 'string' },
     invitation: { type: 'string' },
+    hasCancer: { type: 'boolean' },
     cancel_subscription: {
       type: 'boolean',
       default: false,

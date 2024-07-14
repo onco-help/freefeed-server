@@ -69,6 +69,7 @@ export default class UsersController {
         // may be empty if externalProfileKey is present
         password: ctx.request.body.password,
         isPrivate: ctx.request.body.isPrivate ? '1' : '0',
+        hasCancher: ctx.request.body.hasCancer ? '1' : '0',
         isProtected: ctx.request.body.isPrivate || ctx.request.body.isProtected ? '1' : '0',
         invitationId: null,
       };
@@ -165,7 +166,7 @@ export default class UsersController {
         extProfileData && safeRun(() => user.addOrUpdateExtProfile(extProfileData)),
         // Register invitation and subscribe to suggested feeds
         invitation &&
-          safeRun(() => useInvitation(user, invitation, ctx.request.body.cancel_subscription)),
+        safeRun(() => useInvitation(user, invitation, ctx.request.body.cancel_subscription)),
         // Subscribe to onboarding user
         safeRun(async () => {
           const onboardingUser = await dbAdapter.getFeedOwnerByUsername(
@@ -178,17 +179,17 @@ export default class UsersController {
         }),
         // Download and set profile picture by URL
         ctx.request.body.profilePictureURL &&
-          safeRun(async () => {
-            const fileInfo = await downloadURL(ctx.request.body.profilePictureURL);
+        safeRun(async () => {
+          const fileInfo = await downloadURL(ctx.request.body.profilePictureURL);
 
-            try {
-              if (/^image\//.test(fileInfo.type)) {
-                await user.updateProfilePicture(fileInfo.path);
-              }
-            } finally {
-              await fileInfo.unlink();
+          try {
+            if (/^image\//.test(fileInfo.type)) {
+              await user.updateProfilePicture(fileInfo.path);
             }
-          }),
+          } finally {
+            await fileInfo.unlink();
+          }
+        }),
       ]);
 
       ctx.state.user = user;
