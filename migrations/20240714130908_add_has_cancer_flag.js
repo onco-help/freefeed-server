@@ -1,8 +1,6 @@
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.up = function (knex) {
+import type { Knex } from 'knex';
+
+export const up = function (knex: Knex) {
   knex.schema.raw(`do $$begin
 
   alter table users add column has_cancer boolean not null default false;
@@ -10,11 +8,7 @@ exports.up = function (knex) {
   end$$`);
 };
 
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.down = function (knex) {
+export const down = function (knex: Knex) {
   knex.schema.raw(`do $$begin
 
   alter table users drop column has_cancer;
