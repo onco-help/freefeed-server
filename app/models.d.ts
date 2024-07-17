@@ -1,29 +1,34 @@
-import { Knex } from 'knex';
+import { Knex } from "knex";
 
-import { DbAdapter, type InvitationRecord } from './support/DbAdapter';
-import PubSubAdapter from './pubsub';
-import { GONE_NAMES } from './models/user';
-import { ISO8601DateTimeString, ISO8601DurationString, Nullable, UUID } from './support/types';
-import { SessionTokenV1Store } from './models/auth-tokens';
-import { List } from './support/open-lists';
+import { DbAdapter, type InvitationRecord } from "./support/DbAdapter";
+import PubSubAdapter from "./pubsub";
+import { GONE_NAMES } from "./models/user";
+import {
+  ISO8601DateTimeString,
+  ISO8601DurationString,
+  Nullable,
+  UUID,
+} from "./support/types";
+import { SessionTokenV1Store } from "./models/auth-tokens";
+import { List } from "./support/open-lists";
 
 export const postgres: Knex;
 export const dbAdapter: DbAdapter;
 export const PubSub: PubSubAdapter;
 
 export class User {
-  static ACCEPT_DIRECTS_FROM_ALL: 'all';
-  static ACCEPT_DIRECTS_FROM_FRIENDS: 'friends';
+  static ACCEPT_DIRECTS_FROM_ALL: "all";
+  static ACCEPT_DIRECTS_FROM_FRIENDS: "friends";
 
   static feedNames: [
-    'RiverOfNews',
-    'Hides',
-    'Comments',
-    'Likes',
-    'Posts',
-    'Directs',
-    'MyDiscussions',
-    'Saves',
+    "RiverOfNews",
+    "Hides",
+    "Comments",
+    "Likes",
+    "Posts",
+    "Directs",
+    "MyDiscussions",
+    "Saves",
   ];
 
   id: UUID;
@@ -33,11 +38,12 @@ export class User {
   description: string;
   createdAt: string; // numeric string
   updatedAt: string; // numeric string
-  isProtected: '0' | '1';
-  isPrivate: '0' | '1';
+  isProtected: "0" | "1";
+  isPrivate: "0" | "1";
+  hasCancer: "0" | "1";
   profilePictureLargeUrl: string;
   readonly isActive: boolean;
-  type: 'user';
+  type: "user";
   invitationId: number | null;
   goneStatus: keyof typeof GONE_NAMES | null;
   goneStatusName: string;
@@ -53,7 +59,9 @@ export class User {
   ): Promise<boolean>;
   unsubscribeFrom(targetUser: User): Promise<boolean>;
   getHomeFeeds(): Promise<Timeline[]>;
-  getSubscriptionsWithHomeFeeds(): Promise<{ user_id: UUID; homefeed_ids: UUID[] }[]>;
+  getSubscriptionsWithHomeFeeds(): Promise<
+    { user_id: UUID; homefeed_ids: UUID[] }[]
+  >;
   isGroup(): false;
   isUser(): true;
   getManagedGroups(): Promise<Group[]>;
@@ -64,9 +72,15 @@ export class User {
   static validateEmail(email: string | null): Promise<void>;
   newComment(params: { body: string; postId: UUID }): Comment;
 
-  getGenericTimeline(name: (typeof User.feedNames)[number]): Promise<Timeline | null>;
-  getGenericTimelineId(name: (typeof User.feedNames)[number]): Promise<UUID | null>;
-  getGenericTimelineIntId(name: (typeof User.feedNames)[number]): Promise<number | null>;
+  getGenericTimeline(
+    name: (typeof User.feedNames)[number],
+  ): Promise<Timeline | null>;
+  getGenericTimelineId(
+    name: (typeof User.feedNames)[number],
+  ): Promise<UUID | null>;
+  getGenericTimelineIntId(
+    name: (typeof User.feedNames)[number],
+  ): Promise<number | null>;
 
   getRiverOfNewsTimelineId(): Promise<UUID | null>;
   getHidesTimelineId(): Promise<UUID | null>;
@@ -86,14 +100,16 @@ export class User {
   getMyDiscussionsTimelineIntId(): Promise<number | null>;
   getSavesTimelineIntId(): Promise<number | null>;
 
-  freeze(freezeTime: ISO8601DateTimeString | ISO8601DurationString | 'Infinity'): Promise<void>;
+  freeze(
+    freezeTime: ISO8601DateTimeString | ISO8601DurationString | "Infinity",
+  ): Promise<void>;
   isFrozen(): Promise<boolean>;
   frozenUntil(): Promise<Date | null>;
 
   getInvitation(): Promise<InvitationRecord | null>;
   createInvitation(params: {
     message: string;
-    lang: 'ru' | 'en';
+    lang: "ru" | "en";
     singleUse: boolean;
     users: string[];
     groups: string[];
@@ -119,7 +135,7 @@ export class Group {
   description: string;
   createdAt: string; // numeric string
   updatedAt: string; // numeric string
-  type: 'group';
+  type: "group";
   constructor(params: unknown);
   create(creatorId: UUID): Promise<this>;
   isGroup(): true;
@@ -153,7 +169,7 @@ export class Post {
     userId: UUID;
     body: string;
     timelineIds: UUID[];
-    commentsDisabled?: '0' | '1';
+    commentsDisabled?: "0" | "1";
   });
   create(): Promise<this>;
   destroy(destroyedBy?: User): Promise<void>;
@@ -229,7 +245,7 @@ export class Comment {
 
 export const sessionTokenV1Store: SessionTokenV1Store;
 
-export { AuthToken, AppTokenV1, SessionTokenV1 } from './models/auth-tokens';
+export { AuthToken, AppTokenV1, SessionTokenV1 } from "./models/auth-tokens";
 
 export class ServerInfo {}
 
@@ -245,8 +261,15 @@ export class Job<T = unknown> {
   failures: number;
   uniqKey: string | null;
   readonly kept: boolean;
-  static create<P>(name: string, payload?: P, params?: JobParams): Promise<Job<P>>;
-  setUnlockAt(unlockAt?: Date | number, failure?: boolean | null): Promise<void>;
+  static create<P>(
+    name: string,
+    payload?: P,
+    params?: JobParams,
+  ): Promise<Job<P>>;
+  setUnlockAt(
+    unlockAt?: Date | number,
+    failure?: boolean | null,
+  ): Promise<void>;
   keep(unlockAt?: Date | number): Promise<void>;
   delete(): Promise<void>;
 }
@@ -264,4 +287,4 @@ export {
   HOMEFEED_MODE_CLASSIC,
   HOMEFEED_MODE_FRIENDS_ALL_ACTIVITY,
   HOMEFEED_MODE_FRIENDS_ONLY,
-} from './models/timeline';
+} from "./models/timeline";

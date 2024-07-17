@@ -1,47 +1,52 @@
-import { pick, uniq } from 'lodash';
+import { pick, uniq } from "lodash";
 
-import { User, dbAdapter } from '../../models';
+import { User, dbAdapter } from "../../models";
 
 /**
  * @typedef { import('../../support/types').UUID } UUID
  */
 
 const commonUserFields = [
-  'id',
-  'username',
-  'screenName',
-  'isPrivate',
-  'isProtected',
-  'createdAt',
-  'updatedAt',
-  'type',
-  'description',
-  'profilePictureLargeUrl',
-  'profilePictureMediumUrl',
+  "id",
+  "username",
+  "screenName",
+  "isPrivate",
+  "isProtected",
+  "createdAt",
+  "updatedAt",
+  "type",
+  "description",
+  "profilePictureLargeUrl",
+  "profilePictureMediumUrl",
 ];
 
-const commonGroupFields = [...commonUserFields, 'isRestricted'];
+const commonGroupFields = [...commonUserFields, "isRestricted"];
 
 const selfUserFields = [
   ...commonUserFields,
-  'email',
-  'frontendPreferences',
-  'privateMeta',
-  'preferences',
+  "email",
+  "frontendPreferences",
+  "privateMeta",
+  "preferences",
+  "hasCancer",
 ];
 
 export async function serializeSelfUser(user) {
   const result = pick(user, selfUserFields);
 
-  [result.banIds, result.unreadDirectsNumber, result.unreadNotificationsNumber, result.statistics] =
-    await Promise.all([
-      user.getBanIds(),
-      user.getUnreadDirectsNumber(),
-      user.getUnreadNotificationsNumber(),
-      user.getStatistics(),
-    ]);
+  [
+    result.banIds,
+    result.unreadDirectsNumber,
+    result.unreadNotificationsNumber,
+    result.statistics,
+  ] = await Promise.all([
+    user.getBanIds(),
+    user.getUnreadDirectsNumber(),
+    user.getUnreadNotificationsNumber(),
+    user.getStatistics(),
+  ]);
   result.unreadDirectsNumber = result.unreadDirectsNumber.toString();
-  result.youCan = ['post'];
+  result.youCan = ["post"];
   result.theyDid = [];
 
   return result;
@@ -50,7 +55,10 @@ export async function serializeSelfUser(user) {
 // This function just selects some props from User/Group object and it is not
 // enough to API output.
 function pickAccountProps(user) {
-  const s = pick(user, user.type === 'user' ? commonUserFields : commonGroupFields);
+  const s = pick(
+    user,
+    user.type === "user" ? commonUserFields : commonGroupFields,
+  );
 
   if (!user.isActive) {
     s.isGone = true;
@@ -60,11 +68,11 @@ function pickAccountProps(user) {
 }
 
 const defaultStats = {
-  posts: '0',
-  likes: '0',
-  comments: '0',
-  subscribers: '0',
-  subscriptions: '0',
+  posts: "0",
+  likes: "0",
+  comments: "0",
+  subscribers: "0",
+  subscriptions: "0",
 };
 
 /**
@@ -78,17 +86,26 @@ const defaultStats = {
  * @param {boolean} withAdmins
  * @returns {Promise<Array>}
  */
-export async function serializeUsersByIds(userIds, viewerId = null, withAdmins = true) {
+export async function serializeUsersByIds(
+  userIds,
+  viewerId = null,
+  withAdmins = true,
+) {
   if (userIds.length === 0) {
     return [];
   }
 
   let allUserIds = uniq(userIds);
-  const adminsAssoc = await dbAdapter.getGroupsAdministratorsIds(userIds, viewerId);
+  const adminsAssoc = await dbAdapter.getGroupsAdministratorsIds(
+    userIds,
+    viewerId,
+  );
 
   if (withAdmins) {
     // Complement allUserIds array by the group admins
-    Object.values(adminsAssoc).forEach((ids) => ids.forEach((s) => allUserIds.push(s)));
+    Object.values(adminsAssoc).forEach((ids) =>
+      ids.forEach((s) => allUserIds.push(s)),
+    );
     allUserIds = uniq(allUserIds);
   }
 
@@ -116,20 +133,22 @@ export async function serializeUsersByIds(userIds, viewerId = null, withAdmins =
     viewerId ? dbAdapter.getDirectModesMap(allUserIds) : null,
   ]);
 
-  const groupIds = allUserIds.filter((id) => usersAssoc[id]?.type === 'group');
-  const blockedInGroups = viewerId ? await dbAdapter.groupIdsBlockedUser(viewerId, groupIds) : [];
+  const groupIds = allUserIds.filter((id) => usersAssoc[id]?.type === "group");
+  const blockedInGroups = viewerId
+    ? await dbAdapter.groupIdsBlockedUser(viewerId, groupIds)
+    : [];
 
   // Serialize
   return allUserIds.map((id) => {
     const obj = pickAccountProps(usersAssoc[id]);
     obj.statistics = (!obj.isGone && statsAssoc[id]) || defaultStats;
 
-    if (obj.type === 'group') {
+    if (obj.type === "group") {
       obj.administrators = adminsAssoc[obj.id] || [];
 
       // Groups that have no active admins are restricted
       if (!obj.administrators.some((a) => usersAssoc[a]?.isActive)) {
-        obj.isRestricted = '1';
+        obj.isRestricted = "1";
       }
     }
 
@@ -142,7 +161,7 @@ export async function serializeUsersByIds(userIds, viewerId = null, withAdmins =
 
     if (obj.id === viewerId) {
       // Viewer themselves
-      obj.youCan.push('post');
+      obj.youCan.push("post");
       return obj;
     }
 
@@ -152,35 +171,39 @@ export async function serializeUsersByIds(userIds, viewerId = null, withAdmins =
     const theySentRequest = (subscriptionRequestStatuses.get(id) & 2) !== 0;
 
     if (viewerSubscribed) {
-      obj.youCan.push('unsubscribe');
-    } else if (obj.isPrivate === '1') {
+      obj.youCan.push("unsubscribe");
+    } else if (obj.isPrivate === "1") {
       // Actually we cannot send request if user banned us, but for now we don't
       // want to demonstrate it.
-      obj.youCan.push(viewerSentRequest ? 'unrequest_subscription' : 'request_subscription');
+      obj.youCan.push(
+        viewerSentRequest ? "unrequest_subscription" : "request_subscription",
+      );
     } else {
-      obj.youCan.push('subscribe');
+      obj.youCan.push("subscribe");
     }
 
     if (theySubscribed) {
-      obj.theyDid.push('subscribe');
+      obj.theyDid.push("subscribe");
     } else if (theySentRequest) {
-      obj.theyDid.push('request_subscription');
+      obj.theyDid.push("request_subscription");
     }
 
-    if (obj.type === 'group') {
+    if (obj.type === "group") {
       if (blockedInGroups.includes(id)) {
-        obj.theyDid.push('block');
-      } else if (obj.isRestricted === '1') {
-        obj.administrators.includes(viewerId) && obj.youCan.push('post');
-      } else if (obj.isPrivate === '0' || viewerSubscribed) {
-        obj.youCan.push('post');
+        obj.theyDid.push("block");
+      } else if (obj.isRestricted === "1") {
+        obj.administrators.includes(viewerId) && obj.youCan.push("post");
+      } else if (obj.isPrivate === "0" || viewerSubscribed) {
+        obj.youCan.push("post");
       }
 
-      obj.youCan.push(groupsWithDisabledBans.includes(id) ? 'undisable_bans' : 'disable_bans');
+      obj.youCan.push(
+        groupsWithDisabledBans.includes(id) ? "undisable_bans" : "disable_bans",
+      );
     } else {
       // Regular user
       // Bans
-      obj.youCan.push(viewerBans.includes(id) ? 'unban' : 'ban');
+      obj.youCan.push(viewerBans.includes(id) ? "unban" : "ban");
 
       // Directs
       // See User.acceptsDirectsFrom method for logic
@@ -191,7 +214,7 @@ export async function serializeUsersByIds(userIds, viewerId = null, withAdmins =
           mode === User.ACCEPT_DIRECTS_FROM_ALL ||
           (mode === User.ACCEPT_DIRECTS_FROM_FRIENDS && theySubscribed)
         ) {
-          obj.youCan.push('dm');
+          obj.youCan.push("dm");
         }
       }
     }
