@@ -429,11 +429,6 @@ export function addModel(dbAdapter) {
 
       await dbAdapter.createUserTimelines(this.id, User.feedNames);
 
-      this.subscribeTo({
-        id: "6e142ae8-e583-4f82-acb8-0399e59c7608",
-        isUser: () => false,
-      });
-
       timer.stop();
       monitor.increment("users.creates");
 
