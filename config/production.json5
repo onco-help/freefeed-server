@@ -25,11 +25,10 @@
   media: {
     storage: {
         // 'fs' for local file system or 's3' for AWS S3
-        type: 's3',
+        type: 'fs',
+        rootDir: './public/files/',
 
         // Parameters for 's3'
-        accessKeyId: 'ACCESS-KEY-ID',
-        secretAccessKey: 'SECRET-ACCESS-KEY',
         bucket: 'onco-help',
         //region: 'eu-west-1',
         endpoint: 's3.us-west-002.backblazeb2.com',
