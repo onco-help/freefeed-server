@@ -25,13 +25,13 @@
   media: {
     storage: {
         // 'fs' for local file system or 's3' for AWS S3
-        type: 'fs',
+        type: 's3',
         rootDir: './public/files/',
 
         // Parameters for 's3'
         bucket: 'onco-help',
-        //region: 'eu-west-1',
-        endpoint: 's3.us-west-002.backblazeb2.com',
+        region: 'us-west-002',
+        endpoint: 'https://s3.us-west-002.backblazeb2.com',
         s3ConfigOptions: {},
     }
   },
