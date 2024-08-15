@@ -96,6 +96,7 @@
     "nodemailer-smtp-transport": "~2.7.4",
     "nodemailer-stub-transport": "~1.1.0",
     "numeral": "~2.0.6",
+    "openai": "^4.55.7",
     "passport-local": "1.0.0",
     "pg": "~8.11.5",
     "pg-cursor": "~2.10.5",
