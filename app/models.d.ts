@@ -13,7 +13,10 @@ import { SessionTokenV1Store } from "./models/auth-tokens";
 import { List } from "./support/open-lists";
 
 export const postgres: Knex;
-export const dbAdapter: DbAdapter;
+export const dbAdapter: DbAdapter & {
+  createChatMessage(userId: UUID, message: string, chatId: UUID): Promise<void>;
+  getChatMessages(chatId: UUID): Promise<{ userId: UUID, message: string, createdAt: Date }[]>;
+};
 export const PubSub: PubSubAdapter;
 
 export class User {
