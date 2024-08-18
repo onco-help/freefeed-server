@@ -33,7 +33,7 @@ import AdminCommonRoute from './routes/api/admin/CommonRoute';
 import AdminAdminRoute from './routes/api/admin/AdminRoute';
 import AdminModeratorRoute from './routes/api/admin/ModeratorRoute';
 import { withJWT } from './controllers/middlewares/with-jwt';
-import { chatbot } from './controllers/api/v1/ChatbotController';
+import { getChatMessages, postChatMessage } from './controllers/api/v1/ChatbotController';
 import { withAuthToken } from './controllers/middlewares/with-auth-token';
 import { apiNotFoundMiddleware } from './setup/initializers/api-not-found';
 import { authRequired } from './controllers/middlewares';
@@ -93,7 +93,8 @@ export function createRouter() {
   ServerInfoRoute(publicRouter);
   ExtAuthRoute(publicRouter);
   AttachmentsRouteV2(publicRouter);
-  ChatbotRoute(publicRouter);
+  publicRouter.get('/chatbot', getChatMessages);
+  publicRouter.post('/chatbot', postChatMessage);
 
   publicRouter.use('/api/admin', publicRouter.routes(), publicRouter.allowedMethods());
 
