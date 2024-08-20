@@ -13,10 +13,7 @@ import { SessionTokenV1Store } from "./models/auth-tokens";
 import { List } from "./support/open-lists";
 
 export const postgres: Knex;
-export const dbAdapter: DbAdapter & {
-  createChatMessage(userId: UUID, message: string, chatId: UUID): Promise<void>;
-  getChatMessages(chatId: UUID): Promise<{ userId: UUID, message: string, createdAt: Date }[]>;
-};
+export const dbAdapter: DbAdapter;
 export const PubSub: PubSubAdapter;
 
 export class User {
@@ -284,6 +281,18 @@ export class JobManager {
   on<P = unknown>(name: string, handler: JobHandler<P>): () => void;
   fetchAndProcess(): Promise<Job>;
   use(mw: JobMiddleware): void;
+}
+
+export class Chat {
+  userId: UUID;
+  chatId: UUID;
+  type: string
+}
+
+export class ChatMessage {
+  chatId: UUID;
+  datetime: Date;
+  message: string;
 }
 
 export {
