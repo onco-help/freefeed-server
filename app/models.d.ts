@@ -283,6 +283,18 @@ export class JobManager {
   use(mw: JobMiddleware): void;
 }
 
+export class Chat {
+  userId: UUID;
+  chatId: UUID;
+  type: string
+}
+
+export class ChatMessage {
+  chatId: UUID;
+  datetime: Date;
+  message: string;
+}
+
 export {
   HOMEFEED_MODE_CLASSIC,
   HOMEFEED_MODE_FRIENDS_ALL_ACTIVITY,

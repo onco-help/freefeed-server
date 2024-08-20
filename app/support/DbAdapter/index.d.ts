@@ -426,4 +426,8 @@ export class DbAdapter {
   getCommentEventsListenersForPost(postId: UUID): Promise<Map<UUID, boolean>>;
   setCommentEventsStatusForPost(postId: UUID, userId: UUID, isEnabled: boolean): Promise<void>;
   cleanCommentEventsSubscriptions(userId: UUID): Promise<void>;
+
+  createChatMessage(userId: UUID, message: string, chatId: UUID): Promise<void>;
+  getChatMessages(chatId: UUID): Promise<{ userId: UUID, message: string, createdAt: Date }[]>;
+  getChat(userId: UUID, type: string): Promise<{ userId: UUID, chatId: UUID, chatType: string }>;
 }
