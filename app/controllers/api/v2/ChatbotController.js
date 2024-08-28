@@ -19,3 +19,10 @@ export async function pastMessages(ctx) {
   resultJson = await result.json();
   ctx.body = resultJson;
 }
+
+export async function resetChatbot(ctx) {
+  result = await fetch(CHATBOT_URL + "/reset?userId=" + ctx.state.user.id, {
+    method: 'POST',
+  });
+  ctx.body = await result.json();
+}
